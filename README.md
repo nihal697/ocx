@@ -1,16 +1,15 @@
-# OpenCode Mobile
+# OCX
 
 **The open-source Android client for the [opencode](https://github.com/sst/opencode) AI coding agent.**
-AI-assisted coding from your phone — Android, via Google Play, F-Droid, or a direct APK.
+AI-assisted coding from your phone — Android, via a direct APK.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
-[![F-Droid repo](https://img.shields.io/badge/F--Droid-add_our_repo-1976D2?logo=f-droid)](https://dzianisv.github.io/opencode-mobile/fdroid/repo)
-[![Download APK](https://img.shields.io/badge/Download-APK-green?logo=android)](https://github.com/dzianisv/opencode-mobile/releases/latest)
-[![Google Play](https://img.shields.io/badge/Google_Play-Available-4CAF50?logo=google-play)](https://play.google.com/store/apps/details?id=cc.agentlabs.opencode)
+[![Download APK](https://img.shields.io/badge/Download-APK-green?logo=android)](https://github.com/nihal697/ocx/releases/latest)
 
-> **Not affiliated with opencode.** OpenCode Mobile is an independent, community-built client and is
-> not made by, endorsed by, or affiliated with the opencode / Anomaly team. It talks to an opencode
-> server you run yourself, using opencode's open HTTP API.
+> **Fork lineage.** OCX is a fork of [ncend/opencode-mobile](https://github.com/ncend/opencode-mobile)
+> (itself forked from `dzianisv/opencode-mobile`). It talks to an [opencode](https://github.com/sst/opencode)
+> server you run yourself, using opencode's open HTTP API. OCX is not made by, endorsed by, or affiliated
+> with the opencode / Anomaly team, dzianisv, or ncend.
 
 ---
 
@@ -20,24 +19,14 @@ AI-assisted coding from your phone — Android, via Google Play, F-Droid, or a d
 
 ## Install (Android)
 
-There are **three working ways** to install OpenCode Mobile today, all for Android:
+**Direct signed APK** — download the latest release and install it manually:
+**https://github.com/nihal697/ocx/releases/latest**
 
-1. **Google Play** — **https://play.google.com/store/apps/details?id=cc.agentlabs.opencode**
-
-2. **F-Droid (self-hosted repo)** — add our self-hosted repo to any F-Droid client, then install/update from there:
-   ```
-   https://dzianisv.github.io/opencode-mobile/fdroid/repo
-   ```
-   In the F-Droid app: **Settings → Repositories → + (add)** and paste the URL above. Current version: **v0.4.7**.
-
-3. **Direct signed APK** — download the latest release and install it manually:
-   **https://github.com/dzianisv/opencode-mobile/releases/latest**
-
-> iOS is not available (see [Roadmap](#roadmap)). IzzyOnDroid submission is pending.
+> Google Play and F-Droid are not available for OCX. iOS is not available (see [Roadmap](#roadmap)).
 
 ---
 
-OpenCode Mobile is a React Native / Expo app that brings the power of the [opencode](https://github.com/sst/opencode) AI coding agent to your phone. Connect to your own self-hosted opencode server over your local network, a Cloudflare Tunnel, ngrok, or Tailscale — and write, review, and ship code from anywhere. The mobile client is **free and open-source** under the MIT license. There is no feature gate, no telemetry you did not opt into, and no ad network.
+OCX is a React Native / Expo app that brings the power of the [opencode](https://github.com/sst/opencode) AI coding agent to your phone. Connect to your own self-hosted opencode server over your local network, a Cloudflare Tunnel, ngrok, or Tailscale — and write, review, and ship code from anywhere. The mobile client is **free and open-source** under the MIT license. There is no feature gate, no telemetry you did not opt into, and no ad network.
 
 ---
 
@@ -45,7 +34,7 @@ OpenCode Mobile is a React Native / Expo app that brings the power of the [openc
   <img src="distribution/demo.gif" width="240" alt="OpenCode Mobile demo — connect to your server, browse sessions, and watch the AI agent stream a reply" />
 </p>
 
-<sub>Real on-device capture: add a connection, browse sessions, and watch the agent stream a response. Verified end-to-end on an Android emulator against a live opencode server (build cc.agentlabs.opencode).</sub>
+<sub>Real on-device capture: add a connection, browse sessions, and watch the agent stream a response. Verified end-to-end on an Android emulator against a live opencode server (build com.ocx.app).</sub>
 
 ---
 
@@ -62,19 +51,18 @@ OpenCode Mobile is a React Native / Expo app that brings the power of the [openc
 
 ---
 
-## Get OpenCode Mobile
+## Get OCX
 
-Package: `cc.agentlabs.opencode` · Android only · current version v0.4.7
+Package: `com.ocx.app` · Android only · current version v0.4.16
 
 | Channel | Status | How |
 |---|---|---|
-| **Google Play** | **Live** | [play.google.com/store/apps/details?id=cc.agentlabs.opencode](https://play.google.com/store/apps/details?id=cc.agentlabs.opencode) |
-| **F-Droid (self-hosted repo)** | **Live** | Add [`https://dzianisv.github.io/opencode-mobile/fdroid/repo`](https://dzianisv.github.io/opencode-mobile/fdroid/repo) in your F-Droid client |
-| **Direct APK** | **Live** | [github.com/dzianisv/opencode-mobile/releases/latest](https://github.com/dzianisv/opencode-mobile/releases/latest) |
-| IzzyOnDroid | Submission pending | Not live yet |
+| **Direct APK** | **Live** | [github.com/nihal697/ocx/releases/latest](https://github.com/nihal697/ocx/releases/latest) |
+| Google Play | Not available | OCX ships GitHub releases only |
+| F-Droid | Not available | OCX ships GitHub releases only |
 | Apple App Store / iOS | Not available | See [Roadmap](#roadmap) |
 
-> The three live, supported install channels are **Google Play**, the **F-Droid self-hosted repo**, and the **direct signed APK**, all Android. IzzyOnDroid is pending, and there is no iOS build.
+> The supported install channel is the **direct signed APK**, Android only. There is no iOS build.
 
 ---
 
@@ -92,7 +80,7 @@ npm install -g opencode-ai
 OPENCODE_SERVER_PASSWORD=yourpassword opencode serve --hostname 0.0.0.0 --port 4096
 ```
 
-**Step 2 — Install OpenCode Mobile** via [Google Play, F-Droid, or a direct APK](#install-android) (or build from source — see [CONTRIBUTING.md](CONTRIBUTING.md)).
+**Step 2 — Install OCX** via a [direct APK](#install-android) (or build from source — see [CONTRIBUTING.md](CONTRIBUTING.md)).
 
 **Step 3 — Add a connection in the app**
 
@@ -109,7 +97,7 @@ Enter the password you set in Step 1, tap **Connect**, and you're in.
 
 ## How It Works
 
-OpenCode Mobile is a thin client. It speaks the opencode HTTP + SSE API: listing sessions, sending messages, streaming responses, and subscribing to file-change events. All AI model calls are handled by your opencode server — you bring your own API keys (OpenAI, Anthropic, etc.) and the app never touches them. The app never proxies your code or conversation through our servers.
+OCX is a thin client. It speaks the opencode HTTP + SSE API: listing sessions, sending messages, streaming responses, and subscribing to file-change events. All AI model calls are handled by your opencode server — you bring your own API keys (OpenAI, Anthropic, etc.) and the app never touches them. The app never proxies your code or conversation through our servers.
 
 ```
 ┌─────────────────────────────────────┐
@@ -137,7 +125,7 @@ OpenCode Mobile is a thin client. It speaks the opencode HTTP + SSE API: listing
 
 ## Project Status
 
-**Current version: v0.4.7**
+**Current version: v0.4.16**
 
 | Feature | Status |
 |---|---|
@@ -159,6 +147,8 @@ OpenCode Mobile is a thin client. It speaks the opencode HTTP + SSE API: listing
 
 ## Supporters and Sponsors
 
+> Donations below go to the upstream developers whose work OCX is built on — not to OCX.
+
 OpenCode Mobile is built and maintained by [VIBE TECHNOLOGIES, LLC](https://agentlabs.cc/opencode). GitHub Sponsors help cover Sentry, EAS Build, and CI costs (~$60/month). The opencode Cloud hosted backend (planned, $10/mo) is the long-term revenue model.
 
 If OpenCode Mobile saves you time, consider sponsoring:
@@ -177,7 +167,7 @@ Questions or private support: [support@agentlabs.cc](mailto:support@agentlabs.cc
 
 ## Roadmap
 
-Tracked on the [GitHub Projects board](https://github.com/dzianisv/opencode-mobile/projects) and in the [open milestones](https://github.com/dzianisv/opencode-mobile/milestones).
+Tracked in this repo's [issues](https://github.com/nihal697/ocx/issues).
 
 Near-term priorities:
 - opencode Cloud one-tap connect + managed hosting
@@ -196,9 +186,9 @@ We welcome bug reports, feature requests, and pull requests. See [CONTRIBUTING.m
 
 ## Privacy
 
-OpenCode Mobile does not collect personal data. Optional Sentry crash reporting (opt-in, off by default) sends anonymised crash traces to Sentry. No analytics SDKs are bundled. Credentials are stored exclusively on-device in the OS keystore.
+OCX does not collect personal data. Optional Sentry crash reporting (opt-in, off by default) sends anonymised crash traces to Sentry. No analytics SDKs are bundled. Credentials are stored exclusively on-device in the OS keystore.
 
-Full privacy policy: [dzianisv.github.io/opencode-mobile/privacy](https://dzianisv.github.io/opencode-mobile/privacy/)
+Privacy behaviour follows the upstream policy ([dzianisv.github.io/opencode-mobile/privacy](https://dzianisv.github.io/opencode-mobile/privacy/)) — same codebase, same guarantees.
 
 ---
 
@@ -213,5 +203,7 @@ Copyright (c) 2026 VIBE TECHNOLOGIES, LLC
 ## Acknowledgments
 
 - [sst/opencode](https://github.com/sst/opencode) — the AI coding agent this app connects to (MIT)
+- [ncend/opencode-mobile](https://github.com/ncend/opencode-mobile) — the fork OCX is directly based on
+- [dzianisv/opencode-mobile](https://github.com/dzianisv/opencode-mobile) — the original mobile client
 - [Expo](https://expo.dev) — the React Native toolchain powering the app
 - Every contributor who filed a bug, opened a PR, or starred the repo
