@@ -1,0 +1,6 @@
+v0.4.17 — Much smaller downloads: per-architecture APKs
+
+• Downloads are roughly half the size: one APK per CPU type instead of a universal APK carrying emulator libraries no phone uses.
+• Which file? app-arm64-v8a-release.apk fits all modern phones; app-armeabi-v7a-release.apk is only for pre-2017 32-bit devices.
+• Release builds are now shrunk (R8) with unused locales removed.
+• No app changes in this release — same OCX v0.4.16 features.

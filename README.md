@@ -19,8 +19,11 @@ AI-assisted coding from your phone — Android, via a direct APK.
 
 ## Install (Android)
 
-**Direct signed APK** — download the latest release and install it manually:
+**Direct signed APK** — download the release and install it manually:
 **https://github.com/nihal697/ocx/releases/latest**
+
+> Pick `app-arm64-v8a-release.apk` (all modern phones). Only pre-2017
+> 32-bit devices need `app-armeabi-v7a-release.apk`.
 
 > Google Play and F-Droid are not available for OCX. iOS is not available (see [Roadmap](#roadmap)).
 
@@ -53,11 +56,11 @@ OCX is a React Native / Expo app that brings the power of the [opencode](https:/
 
 ## Get OCX
 
-Package: `com.ocx.app` · Android only · current version v0.4.16
+Package: `com.ocx.app` · Android only · current version v0.4.17
 
 | Channel | Status | How |
 |---|---|---|
-| **Direct APK** | **Live** | [github.com/nihal697/ocx/releases/latest](https://github.com/nihal697/ocx/releases/latest) |
+| **Direct APK** | **Live** | [github.com/nihal697/ocx/releases/latest](https://github.com/nihal697/ocx/releases/latest) — `app-arm64-v8a-release.apk` for modern phones, `app-armeabi-v7a-release.apk` for pre-2017 32-bit |
 | Google Play | Not available | OCX ships GitHub releases only |
 | F-Droid | Not available | OCX ships GitHub releases only |
 | Apple App Store / iOS | Not available | See [Roadmap](#roadmap) |
@@ -126,7 +129,7 @@ OCX is a thin client. It speaks the opencode HTTP + SSE API: listing sessions, s
 
 ## Project Status
 
-**Current version: v0.4.16**
+**Current version: v0.4.17**
 
 | Feature | Status |
 |---|---|

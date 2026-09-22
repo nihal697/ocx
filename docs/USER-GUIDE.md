@@ -19,7 +19,8 @@ talks directly to your machine.
 ## Step 1 — Install the app
 
 1. On your phone, open **https://github.com/nihal697/ocx/releases/latest**
-2. Download the `app-release.apk` file
+2. Download the APK for your phone: `app-arm64-v8a-release.apk` fits all
+   modern phones; only pre-2017 32-bit devices need `app-armeabi-v7a-release.apk`
 3. Open it — Android will ask you to allow installs from your browser/file
    manager. Allow it once, then install
 4. To update later, repeat these steps — OCX shows a banner in the app when a

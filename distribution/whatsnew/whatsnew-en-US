@@ -1,3 +1,3 @@
-v0.4.16 — Now OCX + session and keyboard fixes
+v0.4.17 — Much smaller downloads
 
-OCX is an independent release (package com.ocx.app). Sessions load the right agents per project, errors show as a dismissible banner, chat connects faster, the keyboard no longer covers the input, and voice stop no longer false-errors.
+Downloads are roughly half the size: pick the APK for your phone — arm64 for all modern phones, armeabi only for pre-2017 32-bit devices. No app changes, same OCX features.

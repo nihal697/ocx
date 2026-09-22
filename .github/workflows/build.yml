@@ -108,11 +108,11 @@ jobs:
         working-directory: android
         run: ./gradlew assembleRelease
 
-      - name: Upload APK artifact
+      - name: Upload APK artifacts (per architecture)
         uses: actions/upload-artifact@v7
         with:
           name: app-release
-          path: android/app/build/outputs/apk/release/app-release.apk
+          path: android/app/build/outputs/apk/release/app-*-release.apk
 
   # OCX is GitHub-releases-only: the F-Droid flavor job was removed.
   # See git history for the build-fdroid job if F-Droid is ever wanted.
@@ -131,5 +131,6 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            app-release.apk
+            app-arm64-v8a-release.apk
+            app-armeabi-v7a-release.apk
           generate_release_notes: true
