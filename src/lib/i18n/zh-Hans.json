@@ -6,7 +6,8 @@
     "delete": "删除",
     "retry": "重试",
     "save": "保存",
-    "shareReport": "分享报告"
+    "shareReport": "分享报告",
+    "dismiss": "关闭"
   },
   "settings": {
     "sections": {

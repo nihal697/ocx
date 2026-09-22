@@ -19,9 +19,20 @@ export interface Provider {
   models: ProviderModel[]
 }
 
-interface ModelSelection {
+export interface ModelSelection {
   providerID: string
   modelID: string
+}
+
+interface PerDirectoryCatalog {
+  agents: Agent[]
+  commands: Command[]
+  providers: Provider[]
+  defaults: Record<string, string>
+  agent: string
+  model: ModelSelection | null
+  variant: string | null
+  loaded: boolean
 }
 
 function sameModel(left: ModelSelection | null, right: ModelSelection | null) {
@@ -29,25 +40,21 @@ function sameModel(left: ModelSelection | null, right: ModelSelection | null) {
 }
 
 interface CatalogState {
-  agents: Agent[]
-  commands: Command[]
-  providers: Provider[]
-  defaults: Record<string, string>
-  // Current selections
-  agent: string // agent name, e.g. "build"
-  model: ModelSelection | null
-  variant: string | null // model variant for reasoning effort (e.g. "low", "medium", "high")
-  loaded: boolean
+  // Global (directory-less) catalog for connections screen etc.
+  global: PerDirectoryCatalog
+  // Per-directory catalogs
+  byDirectory: Record<string, PerDirectoryCatalog>
 
   // Actions
-  load: () => Promise<void>
-  setAgent: (name: string) => void
-  setModel: (selection: ModelSelection | null) => void
-  setVariant: (variant: string | null) => void
-  cycleAgent: (direction?: 1 | -1) => void
+  load: (directory?: string) => Promise<void>
+  getCatalog: (directory?: string) => PerDirectoryCatalog
+  setAgent: (directory: string | undefined, name: string) => void
+  setModel: (directory: string | undefined, selection: ModelSelection | null) => void
+  setVariant: (directory: string | undefined, variant: string | null) => void
+  cycleAgent: (directory: string | undefined, direction?: 1 | -1) => void
 }
 
-export const useCatalog = create<CatalogState>((set, get) => ({
+const emptyCatalog: PerDirectoryCatalog = {
   agents: [],
   commands: [],
   providers: [],
@@ -56,9 +63,17 @@ export const useCatalog = create<CatalogState>((set, get) => ({
   model: null,
   variant: null,
   loaded: false,
+}
 
-  load: async () => {
-    const client = useConnections.getState().client
+export const useCatalog = create<CatalogState>((set, get) => ({
+  global: emptyCatalog,
+  byDirectory: {},
+
+  load: async (directory) => {
+    const connState = useConnections.getState()
+    const client = directory
+      ? connState.clientForDirectory(directory) ?? connState.client
+      : connState.client
     if (!client) return
 
     const [agentResult, commandResult, providerResult] = await Promise.all([
@@ -70,7 +85,6 @@ export const useCatalog = create<CatalogState>((set, get) => ({
     const agents = Array.isArray(agentResult) ? agentResult : []
     const commands = Array.isArray(commandResult) ? commandResult : []
 
-    // Parse provider response: { all: [...], default: {...}, connected: [...] }
     const raw = providerResult
     const connected = new Set(Array.isArray(raw?.connected) ? raw.connected : [])
     const defaults = raw?.default || {}
@@ -95,16 +109,15 @@ export const useCatalog = create<CatalogState>((set, get) => ({
           .filter((p) => p.models.length > 0)
       : []
 
-    // Filter out hidden agents
     const visible = agents.filter((a) => !a.hidden)
 
-    // Default agent
-    const current = get().agent
+    const currentCatalog = directory
+      ? get().byDirectory[directory] || emptyCatalog
+      : get().global
+    const current = currentCatalog.agent
     const agent = current && visible.some((a) => a.name === current) ? current : visible[0]?.name || "build"
 
-    // Default model: keep valid existing selection; otherwise prefer connected
-    // provider defaults, then first connected model; agent model is last fallback.
-    const existing = get().model
+    const existing = currentCatalog.model
     const defaultAgent = visible[0]
     const model = chooseModelSelection({
       providers,
@@ -113,43 +126,103 @@ export const useCatalog = create<CatalogState>((set, get) => ({
       agentModel: defaultAgent?.model || null,
     })
 
-    set((state) => ({
+    const newCatalog: PerDirectoryCatalog = {
       agents: visible,
       commands,
       providers,
       defaults,
       agent,
       model,
-      variant: sameModel(state.model, model) ? state.variant : null,
+      variant: sameModel(currentCatalog.model, model) ? currentCatalog.variant : null,
       loaded: true,
-    }))
+    }
+
+    if (directory) {
+      set((state) => ({
+        byDirectory: { ...state.byDirectory, [directory]: newCatalog },
+      }))
+    } else {
+      set((state) => ({
+        global: newCatalog,
+      }))
+    }
   },
 
-  setAgent: (name) => {
-    const match = get().agents.find((a) => a.name === name)
+  getCatalog: (directory) => {
+    if (directory) {
+      return get().byDirectory[directory] || emptyCatalog
+    }
+    return get().global
+  },
+
+  setAgent: (directory, name) => {
+    const catalog = directory
+      ? get().byDirectory[directory] || emptyCatalog
+      : get().global
+    const match = catalog.agents.find((a) => a.name === name)
     if (!match) return
-    const model = match.model || get().model
-    set((state) => ({
+    const model = match.model || catalog.model
+    const newCatalog = {
+      ...catalog,
       agent: name,
       model,
-      variant: sameModel(state.model, model) ? state.variant : null,
-    }))
+      variant: sameModel(catalog.model, model) ? catalog.variant : null,
+    }
+    if (directory) {
+      set((state) => ({
+        byDirectory: { ...state.byDirectory, [directory]: newCatalog },
+      }))
+    } else {
+      set((state) => ({
+        global: newCatalog,
+      }))
+    }
   },
 
-  setModel: (selection) =>
-    set((state) => ({
+  setModel: (directory, selection) => {
+    const catalog = directory
+      ? get().byDirectory[directory] || emptyCatalog
+      : get().global
+    const newCatalog = {
+      ...catalog,
       model: selection,
-      variant: sameModel(state.model, selection) ? state.variant : null,
-    })),
+      variant: sameModel(catalog.model, selection) ? catalog.variant : null,
+    }
+    if (directory) {
+      set((state) => ({
+        byDirectory: { ...state.byDirectory, [directory]: newCatalog },
+      }))
+    } else {
+      set((state) => ({
+        global: newCatalog,
+      }))
+    }
+  },
 
-  setVariant: (variant) => set({ variant }),
+  setVariant: (directory, variant) => {
+    const catalog = directory
+      ? get().byDirectory[directory] || emptyCatalog
+      : get().global
+    const newCatalog = { ...catalog, variant }
+    if (directory) {
+      set((state) => ({
+        byDirectory: { ...state.byDirectory, [directory]: newCatalog },
+      }))
+    } else {
+      set((state) => ({
+        global: newCatalog,
+      }))
+    }
+  },
 
-  cycleAgent: (direction = 1) => {
-    const { agents, agent } = get()
-    const primary = agents.filter((a) => a.mode === "primary" || a.mode === "all")
+  cycleAgent: (directory, direction = 1) => {
+    const catalog = directory
+      ? get().byDirectory[directory] || emptyCatalog
+      : get().global
+    const primary = catalog.agents.filter((a) => (a.mode ?? "all") !== "subagent")
     if (primary.length < 2) return
-    const idx = primary.findIndex((a) => a.name === agent)
+    const idx = primary.findIndex((a) => a.name === catalog.agent)
     const next = (idx + direction + primary.length) % primary.length
-    get().setAgent(primary[next].name)
+    get().setAgent(directory, primary[next].name)
   },
 }))

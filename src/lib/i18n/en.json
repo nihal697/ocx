@@ -6,7 +6,8 @@
     "delete": "Delete",
     "retry": "Retry",
     "save": "Save",
-    "shareReport": "Share report"
+    "shareReport": "Share report",
+    "dismiss": "Dismiss"
   },
   "settings": {
     "sections": {

@@ -44,7 +44,9 @@ export function useSpeech(onResult: (text: string) => void): SpeechState & Speec
 
   useSpeechRecognitionEvent("error", (event) => {
     // "no-speech" is not really an error — user just didn't say anything
-    if (event.error === "no-speech") {
+    // "aborted" is emitted on Android when abort() is called even if not listening
+    // (see expo-speech-recognition's native module) — treat as benign.
+    if (event.error === "no-speech" || event.error === "aborted") {
       setListening(false)
       return
     }

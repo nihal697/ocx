@@ -108,17 +108,28 @@ export const useConnections = create<ConnectionsState>((set, get) => ({
         const built = buildClient(active.url, active.directory, auth)
         client = built.client
         base = built.base
-        // Fetch current project info and server paths
-        try {
-          const [proj, paths] = await Promise.all([
-            client.project.current().catch(() => null),
-            client.path.get().catch(() => null),
-          ])
-          project = proj
-          home = paths?.home || null
-        } catch {
-          // Server might be offline
-        }
+        // Commit client immediately so SSE + catalog can start; fetch metadata
+        // fire-and-forget with a stale guard so a slow/late response can't clobber
+        // state after the user switches servers mid-fetch.
+        const clientForMetadata = client
+        ;(async () => {
+          try {
+            const [proj, paths] = await Promise.all([
+              clientForMetadata.project.current().catch(() => null),
+              clientForMetadata.path.get().catch(() => null),
+            ])
+            // Only update if this client is still the active one
+            const state = useConnections.getState()
+            if (state.client === clientForMetadata) {
+              useConnections.setState({
+                currentProject: proj,
+                serverHome: paths?.home || null,
+              })
+            }
+          } catch {
+            // Server might be offline
+          }
+        })()
       }
 
       set({
@@ -168,18 +179,26 @@ export const useConnections = create<ConnectionsState>((set, get) => ({
       client = built.client
       base = built.base
 
-      // Fetch server metadata so loadSessions can use clientForDirectory(serverHome)
-      // immediately after the connection is added (same as setActiveConnection does).
-      try {
-        const [proj, paths] = await Promise.all([
-          client.project.current().catch(() => null),
-          client.path.get().catch(() => null),
-        ])
-        project = proj
-        serverHome = paths?.home || null
-      } catch {
-        // Server might be unreachable; proceed without metadata
-      }
+      // Commit client immediately so SSE + catalog can start; fetch metadata
+      // fire-and-forget with a stale guard.
+      const clientForMetadata = client
+      ;(async () => {
+        try {
+          const [proj, paths] = await Promise.all([
+            clientForMetadata.project.current().catch(() => null),
+            clientForMetadata.path.get().catch(() => null),
+          ])
+          const state = useConnections.getState()
+          if (state.client === clientForMetadata) {
+            useConnections.setState({
+              currentProject: proj,
+              serverHome: paths?.home || null,
+            })
+          }
+        } catch {
+          // Server might be unreachable; proceed without metadata
+        }
+      })()
     }
 
     set({ connections, activeConnection, client, clientBase: base, currentProject: project, serverHome })
@@ -233,16 +252,26 @@ export const useConnections = create<ConnectionsState>((set, get) => ({
       client = built.client
       base = built.base
 
-      try {
-        const [proj, paths] = await Promise.all([
-          client.project.current().catch(() => null),
-          client.path.get().catch(() => null),
-        ])
-        project = proj
-        home = paths?.home || null
-      } catch {
-        // Server might be offline
-      }
+      // Commit client immediately so SSE + catalog can start; fetch metadata
+      // fire-and-forget with a stale guard.
+      const clientForMetadata = client
+      ;(async () => {
+        try {
+          const [proj, paths] = await Promise.all([
+            clientForMetadata.project.current().catch(() => null),
+            clientForMetadata.path.get().catch(() => null),
+          ])
+          const state = useConnections.getState()
+          if (state.client === clientForMetadata) {
+            useConnections.setState({
+              currentProject: proj,
+              serverHome: paths?.home || null,
+            })
+          }
+        } catch {
+          // Server might be offline
+        }
+      })()
 
       // Update last connected time
       active.lastConnected = Date.now()
@@ -295,28 +324,35 @@ export const useConnections = create<ConnectionsState>((set, get) => ({
       const password = await SecureStore.getItemAsync(`${PASSWORDS_PREFIX}${id}`)
       const auth = buildAuth(active.username, password)
       const built = buildClient(active.url, active.directory, auth)
-      try {
-        const [project, paths] = await Promise.all([
-          built.client.project.current().catch(() => null),
-          built.client.path.get().catch(() => null),
-        ])
-        set({
-          connections,
-          activeConnection: active,
-          client: built.client,
-          clientBase: built.base,
-          currentProject: project,
-          serverHome: paths?.home || null,
-        })
-      } catch {
-        set({
-          connections,
-          activeConnection: active,
-          client: built.client,
-          clientBase: built.base,
-          currentProject: null,
-        })
-      }
+
+      // Commit client immediately; fetch metadata fire-and-forget with stale guard
+      const clientForMetadata = built.client
+      ;(async () => {
+        try {
+          const [proj, paths] = await Promise.all([
+            clientForMetadata.project.current().catch(() => null),
+            clientForMetadata.path.get().catch(() => null),
+          ])
+          const state = useConnections.getState()
+          if (state.client === clientForMetadata) {
+            useConnections.setState({
+              currentProject: proj,
+              serverHome: paths?.home || null,
+            })
+          }
+        } catch {
+          // Server might be offline
+        }
+      })()
+
+      set({
+        connections,
+        activeConnection: active,
+        client: built.client,
+        clientBase: built.base,
+        currentProject: null,
+        serverHome: null,
+      })
     } else {
       set({ connections })
     }
