@@ -31,7 +31,7 @@ OCX is a React Native / Expo app that brings the power of the [opencode](https:/
 ---
 
 <p align="center">
-  <img src="distribution/demo.gif" width="240" alt="OpenCode Mobile demo — connect to your server, browse sessions, and watch the AI agent stream a reply" />
+  <img src="distribution/demo.gif" width="240" alt="OCX demo — connect to your server, browse sessions, and watch the AI agent stream a reply" />
 </p>
 
 <sub>Real on-device capture: add a connection, browse sessions, and watch the agent stream a response. Verified end-to-end on an Android emulator against a live opencode server (build com.ocx.app).</sub>
@@ -68,6 +68,8 @@ Package: `com.ocx.app` · Android only · current version v0.4.16
 
 ## Quick Start
 
+> Full step-by-step guide with troubleshooting: [docs/USER-GUIDE.md](docs/USER-GUIDE.md).
+
 **Don't have a server yet?** Install the app and tap **Try a Demo** on the Sessions screen first — no setup required. It plays back a scripted bug-fix session through the app's real chat, diff, and permission-approval UI, offline, in about 30 seconds.
 
 **Step 1 — Start opencode on your machine**
@@ -89,7 +91,6 @@ Open the app, tap **Add Connection**, and choose your connection type:
 - **Local network** — your machine's LAN IP, e.g. `http://192.168.1.100:4096`
 - **Tunnel** — a Cloudflare Tunnel or ngrok URL, e.g. `https://my-opencode.trycloudflare.com`
 - **Tailscale** — your machine's Tailscale IP, e.g. `http://100.x.x.x:4096`
-- **opencode Cloud** *(planned — not yet shipped)* — one-tap managed hosting, no server to run
 
 Enter the password you set in Step 1, tap **Connect**, and you're in.
 
@@ -97,11 +98,11 @@ Enter the password you set in Step 1, tap **Connect**, and you're in.
 
 ## How It Works
 
-OCX is a thin client. It speaks the opencode HTTP + SSE API: listing sessions, sending messages, streaming responses, and subscribing to file-change events. All AI model calls are handled by your opencode server — you bring your own API keys (OpenAI, Anthropic, etc.) and the app never touches them. The app never proxies your code or conversation through our servers.
+OCX is a thin client. It speaks the opencode HTTP + SSE API: listing sessions, sending messages, streaming responses, and subscribing to file-change events. All AI model calls are handled by your opencode server — you bring your own API keys (OpenAI, Anthropic, etc.) and the app never touches them. The app never proxies your code or conversation through any third-party server.
 
 ```
 ┌─────────────────────────────────────┐
-│         OpenCode Mobile             │
+│                OCX                    │
 │  (React Native / Expo, this repo)   │
 └──────────────┬──────────────────────┘
                │  HTTP + SSE
@@ -139,7 +140,6 @@ OCX is a thin client. It speaks the opencode HTTP + SSE API: listing sessions, s
 | Tool call approval UI | Stable |
 | Sentry crash reporting (opt-in) | Stable |
 | Cloudflare / ngrok tunnel wizard | Beta |
-| opencode Cloud one-tap connect | Planned |
 | iPad / tablet layout | Planned |
 | Offline session history | Planned |
 
@@ -161,7 +161,7 @@ If OpenCode Mobile saves you time, consider sponsoring:
 | Backer | $15/mo | Name + early access to opencode Cloud beta |
 | Business | $50/mo | Logo on [agentlabs.cc/opencode](https://agentlabs.cc/opencode) + quarterly support call |
 
-Questions or private support: [support@agentlabs.cc](mailto:support@agentlabs.cc)
+Questions or OCX support: [nihal697/ocx issues](https://github.com/nihal697/ocx/issues)
 
 ---
 
@@ -170,8 +170,7 @@ Questions or private support: [support@agentlabs.cc](mailto:support@agentlabs.cc
 Tracked in this repo's [issues](https://github.com/nihal697/ocx/issues).
 
 Near-term priorities:
-- opencode Cloud one-tap connect + managed hosting
-- F-Droid mainline acceptance (FCM audit + reproducible build verification)
+- GitHub releases (signed APKs, in-app update banner)
 - Tunnel setup wizard (Cloudflare / ngrok / Tailscale)
 - iPad / tablet layout
 - Offline session history cache
