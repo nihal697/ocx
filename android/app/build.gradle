@@ -89,13 +89,13 @@ android {
     buildToolsVersion rootProject.ext.buildToolsVersion
     compileSdk rootProject.ext.compileSdkVersion
 
-    namespace 'cc.agentlabs.opencode'
+    namespace 'com.ocx.app'
     defaultConfig {
-        applicationId 'cc.agentlabs.opencode'
+        applicationId 'com.ocx.app'
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 42
-        versionName "0.4.15"
+        versionCode 43
+        versionName "0.4.16"
 
         buildConfigField "String", "REACT_NATIVE_RELEASE_LEVEL", "\"${findProperty('reactNativeReleaseLevel') ?: 'stable'}\""
     }

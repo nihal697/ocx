@@ -39,7 +39,7 @@ export function initSentry() {
   try {
     Sentry.init({
       dsn: DSN,
-      release: `opencode-mobile@${APP_VERSION}`,
+      release: `ocx-mobile@${APP_VERSION}`,
       dist: APP_VERSION,
       // Performance tracing off by default; only error + crash capture.
       tracesSampleRate: 0,
@@ -72,7 +72,7 @@ export function initSentry() {
     })
     enabled = true
     Sentry.setTag("app.version", APP_VERSION)
-    log.info("sentry", "initialized", `release=opencode-mobile@${APP_VERSION}`)
+    log.info("sentry", "initialized", `release=ocx-mobile@${APP_VERSION}`)
   } catch (e) {
     log.warn("sentry", "init failed", String(e))
   }

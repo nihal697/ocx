@@ -1,4 +1,4 @@
-package cc.agentlabs.opencode
+package com.ocx.app
 
 import android.app.Application
 import android.content.res.Configuration

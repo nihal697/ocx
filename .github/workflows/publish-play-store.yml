@@ -1,10 +1,8 @@
 name: Publish to Google Play Store
 
 on:
-  release:
-    types: [published]
-  push:
-    tags: ["v*"]
+  # GitHub-releases-only mode (OCX): store publishes are manual via
+  # workflow_dispatch. Tag pushes must NOT auto-publish to Play.
   workflow_dispatch:
     inputs:
       track:

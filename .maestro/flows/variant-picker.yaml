@@ -1,4 +1,4 @@
-appId: cc.agentlabs.opencode
+appId: com.ocx.app
 name: Variant picker - reasoning-effort chip renders, selects, and still sends
 ---
 # New-feature regression coverage for VariantPicker

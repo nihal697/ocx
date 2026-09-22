@@ -1,8 +1,8 @@
 name: Publish F-Droid Repo
 
 on:
-  push:
-    tags: ["v*"]
+  # GitHub-releases-only mode (OCX): F-Droid repo publish is manual via
+  # workflow_dispatch. Tag pushes must NOT auto-publish.
   workflow_dispatch:
 
 jobs:

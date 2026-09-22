@@ -1,4 +1,4 @@
-appId: cc.agentlabs.opencode
+appId: com.ocx.app
 name: Activation - positive path (consent -> connect -> send message)
 ---
 # Positive activation flow: first launch -> telemetry consent -> quick connect

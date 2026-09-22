@@ -1,4 +1,4 @@
-appId: cc.agentlabs.opencode
+appId: com.ocx.app
 name: All sessions across directories - list + open-across-project (regression #46/#48)
 ---
 # New-feature regression coverage for the "all sessions across all projects"

@@ -1,4 +1,4 @@
-appId: cc.agentlabs.opencode
+appId: com.ocx.app
 name: Directory picker - browse server folders and create a session in one
 ---
 # New-feature regression coverage for DirectoryBrowserSheet
