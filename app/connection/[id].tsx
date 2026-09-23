@@ -9,6 +9,8 @@ import {
   useColorScheme,
   ActivityIndicator,
   Alert,
+  KeyboardAvoidingView,
+  Platform,
 } from "react-native"
 import { router, useLocalSearchParams } from "expo-router"
 import { Ionicons } from "@expo/vector-icons"
@@ -20,6 +22,7 @@ import { probeConnection, shareReport } from "../../src/lib/diagnostics"
 import { captureDiagnostic } from "../../src/lib/sentry"
 import { parseUrl } from "../../src/lib/diagnostics-classify"
 import { buildAuth } from "../../src/lib/auth"
+import { useKeyboardHeight } from "../../src/lib/use-keyboard-height"
 
 // labelKey (not literal text): this is a module-level constant evaluated
 // before i18next is guaranteed ready, so the label is resolved with t() at
@@ -52,6 +55,12 @@ export default function EditConnectionScreen() {
   const [password, setPassword] = useState("")
   const [isTesting, setIsTesting] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
+
+  // Android edge-to-edge ignores adjustResize, so the KeyboardAvoidingView
+  // can't compute the keyboard height — pad the container with the real height
+  // instead (same pattern as the session composer) or the lower inputs get
+  // covered by the soft keyboard on Android 15+.
+  const keyboardHeight = useKeyboardHeight()
 
   useEffect(() => {
     if (connection) {
@@ -181,6 +190,14 @@ export default function EditConnectionScreen() {
   }
 
   return (
+    <KeyboardAvoidingView
+      style={[
+        styles.container,
+        isDark && styles.containerDark,
+        Platform.OS === "android" && { paddingBottom: keyboardHeight },
+      ]}
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
+    >
     <ScrollView
       style={[styles.container, isDark && styles.containerDark]}
       contentContainerStyle={styles.content}
@@ -316,6 +333,7 @@ export default function EditConnectionScreen() {
         </TouchableOpacity>
       </View>
     </ScrollView>
+    </KeyboardAvoidingView>
   )
 }
 

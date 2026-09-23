@@ -10,6 +10,8 @@ import {
   ActivityIndicator,
   Alert,
   Linking,
+  KeyboardAvoidingView,
+  Platform,
 } from "react-native"
 import { router } from "expo-router"
 import { Ionicons } from "@expo/vector-icons"
@@ -23,6 +25,7 @@ import { buildAuth } from "../../src/lib/auth"
 import { AnalyticsEvent, track } from "../../src/lib/analytics"
 import { submitWaitlistSignup, buildWaitlistMailtoUrl, needsManualEscapeHatch, type QueuedSignup } from "../../src/lib/waitlist"
 import { flushPendingSignups, queuePendingSignup, readPendingSignups, dropPendingSignup } from "../../src/lib/waitlist-queue-storage"
+import { useKeyboardHeight } from "../../src/lib/use-keyboard-height"
 import appJson from "../../app.json"
 
 // Same read as sentry.ts: app.json is the single source of the user-visible
@@ -38,6 +41,12 @@ export default function AddConnectionScreen() {
 
   const [mode, setMode] = useState<"quick" | "advanced">("quick")
   const [type, setType] = useState<ConnectionType>("local")
+
+  // Android edge-to-edge ignores adjustResize, so the KeyboardAvoidingView
+  // can't compute the keyboard height — pad the screen container with the
+  // real height instead (same pattern as the session composer). On Android 15+
+  // the soft keyboard would otherwise cover the lower inputs on this screen.
+  const keyboardHeight = useKeyboardHeight()
   const [name, setName] = useState("")
   const [ip, setIp] = useState("")
   const [port, setPort] = useState("4096")
@@ -315,6 +324,14 @@ export default function AddConnectionScreen() {
   // Quick connect mode - simplified
   if (mode === "quick") {
     return (
+      <KeyboardAvoidingView
+        style={[
+          styles.container,
+          isDark && styles.containerDark,
+          Platform.OS === "android" && { paddingBottom: keyboardHeight },
+        ]}
+        behavior={Platform.OS === "ios" ? "padding" : undefined}
+      >
       <ScrollView
         style={[styles.container, isDark && styles.containerDark]}
         contentContainerStyle={styles.content}
@@ -515,12 +532,21 @@ export default function AddConnectionScreen() {
           </Text>
           <Ionicons name="chevron-forward" size={16} color={isDark ? "#888888" : "#666666"} />
         </TouchableOpacity>
-      </ScrollView>
+        </ScrollView>
+      </KeyboardAvoidingView>
     )
   }
 
   // Advanced mode - full options
   return (
+    <KeyboardAvoidingView
+      style={[
+        styles.container,
+        isDark && styles.containerDark,
+        Platform.OS === "android" && { paddingBottom: keyboardHeight },
+      ]}
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
+    >
     <ScrollView
       style={[styles.container, isDark && styles.containerDark]}
       contentContainerStyle={styles.content}
@@ -658,6 +684,7 @@ export default function AddConnectionScreen() {
         )}
       </TouchableOpacity>
     </ScrollView>
+    </KeyboardAvoidingView>
   )
 }
 

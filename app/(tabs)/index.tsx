@@ -30,6 +30,7 @@ import { groupByDirectory } from "../../src/lib/session-grouping"
 import { UpdateBanner } from "../../src/components/UpdateBanner"
 import { nameOf } from "../../src/lib/path-utils"
 import { SETUP_GUIDE_URL } from "../../src/lib/links"
+import { useKeyboardHeight } from "../../src/lib/use-keyboard-height"
 
 function formatTime(timestamp: number, t: (key: string, opts?: Record<string, unknown>) => string): string {
   const date = new Date(timestamp)
@@ -174,6 +175,11 @@ export default function SessionsScreen() {
   const [serverProjects, setServerProjects] = useState<Project[]>([])
 
   const { sessions, isLoading, error, loadSessions, createSession, deleteSession } = useSessions()
+
+  // Android edge-to-edge ignores adjustResize, so KeyboardAvoidingView's
+  // behavior="height" can't keep the manual-path input above the keyboard —
+  // pad the modal overlay with the real keyboard height instead.
+  const keyboardHeight = useKeyboardHeight()
   const {
     activeConnection,
     client,
@@ -596,7 +602,13 @@ export default function SessionsScreen() {
 
       {/* New Session Info Modal */}
       <Modal visible={showNewSession} animationType="slide" transparent>
-        <KeyboardAvoidingView style={styles.modalOverlay} behavior={Platform.OS === "ios" ? "padding" : "height"}>
+        <KeyboardAvoidingView
+          style={[
+            styles.modalOverlay,
+            Platform.OS === "android" && { paddingBottom: keyboardHeight },
+          ]}
+          behavior={Platform.OS === "ios" ? "padding" : undefined}
+        >
           <TouchableOpacity style={styles.modalDismiss} activeOpacity={1} onPress={() => setShowNewSession(false)} />
           <View style={[styles.modalContent, isDark && styles.modalContentDark]}>
             <View style={styles.modalHeader}>
