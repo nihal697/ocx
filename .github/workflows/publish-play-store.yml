@@ -110,9 +110,9 @@ jobs:
         # The Android build cache (restore-keys prefix fallback) can restore a
         # generated autolinking tree from a previous package id. Gradle then
         # reuses ReactNativeApplicationEntryPoint.java referencing the OLD
-        # package (ai.opencode.mobile.BuildConfig) and compileReleaseJavaWithJavac
+        # package (com.ocx.app.BuildConfig) and compileReleaseJavaWithJavac
         # fails. Delete generated sources so prebuild + Gradle regenerate them
-        # for the current package (cc.agentlabs.opencode).
+        # for the current package (com.ocx.app).
         run: rm -rf android/app/build/generated android/build/generated android/app/build/intermediates
 
       - name: Expo prebuild
@@ -177,7 +177,7 @@ jobs:
         uses: r0adkll/upload-google-play@e738b9dd8f2476ea806d921b64aacd24f34515a5 # v1.1.5
         with:
           serviceAccountJsonPlainText: ${{ secrets.PLAY_STORE_SERVICE_ACCOUNT_JSON }}
-          packageName: cc.agentlabs.opencode
+          packageName: com.ocx.app
           releaseFiles: android/app/build/outputs/bundle/release/app-release.aab
           track: ${{ steps.channel.outputs.track }}
           status: ${{ steps.channel.outputs.status }}

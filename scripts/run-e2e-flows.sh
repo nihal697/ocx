@@ -10,7 +10,9 @@
 set -uo pipefail
 
 ROOT="$(pwd)"                       # capture BEFORE any cd, so diag paths are absolute
-APK="android/app/build/outputs/apk/release/app-release.apk"
+# activation-e2e.yml builds assembleDebug -PbuildAbiSplits=false (the x86_64
+# emulator can't install the per-arch release APKs), so install the debug apk.
+APK="android/app/build/outputs/apk/debug/app-debug.apk"
 # CORE = the activation coverage issue #90 verified green (consent -> connect
 # -> send, and the connect-time-401 visible-error case). A failure here fails
 # the job — this is the suite's actual regression gate.

@@ -55,7 +55,7 @@ on:
 jobs:
   activation-e2e:
     runs-on: ubuntu-latest
-    # Same npm install + expo prebuild + assembleRelease + emulator pipeline as
+    # Same npm install + expo prebuild + assembleDebug + emulator pipeline as
     # cua-smoke.yml, which budgets 60 min (emulator-boot-timeout alone is 10 min).
     # Typical runs finish well under this; the ceiling just avoids flaky kills
     # on cold Gradle caches.
@@ -101,7 +101,7 @@ jobs:
         # shares — the cache key/restore-keys are identical): the restore-keys
         # prefix fallback can restore a generated autolinking tree from a
         # previous package id, making compileReleaseJavaWithJavac fail against
-        # the old package (ai.opencode.mobile vs cc.agentlabs.opencode). Delete
+        # the old package (com.ocx.app). Delete
         # generated sources so prebuild + Gradle regenerate them.
         run: rm -rf android/app/build/generated android/build/generated android/app/build/intermediates
 
@@ -117,7 +117,9 @@ jobs:
           npm install --legacy-peer-deps
           npx expo prebuild --platform android --no-install
           keytool -genkey -v -keystore android/app/debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
-          cd android && ./gradlew assembleRelease
+          # Emulator is x86_64: build a universal DEBUG apk (buildAbiSplits=false
+          # includes x86_64 libs) — the per-arch release APKs can't install on it.
+          cd android && ./gradlew assembleDebug -PbuildAbiSplits=false
 
       - name: Start mock opencode servers
         run: |
