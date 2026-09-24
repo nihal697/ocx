@@ -1,11 +1,12 @@
 import { create } from "zustand"
 import * as SecureStore from "expo-secure-store"
 import * as Crypto from "expo-crypto"
-import type { ServerConnection, ConnectionType } from "../lib/types"
-import { createClient, type Client, type Project } from "../lib/sdk"
+import type { ServerConnection, ConnectionType, ServerProtocol } from "../lib/types"
+import { createClient, detectServerProtocol, type Client, type Project } from "../lib/sdk"
 import { addBreadcrumb } from "../lib/sentry"
 import { AnalyticsEvent, classifyConnectionError, track, type ConnectionTestSource } from "../lib/analytics"
 import { buildAuth } from "../lib/auth"
+import { buildRequestHeaders } from "../lib/headers"
 import { stripTrailingSlash } from "../lib/path-utils"
 
 const CONNECTIONS_KEY = "opencode_connections"
@@ -15,14 +16,16 @@ const MAX_RECENT_DIRS = 10
 // A bad IP (unreachable host, wrong port) otherwise hangs for the full 30s
 // general request timeout before the user sees a "connection failed" error —
 // a first-run bounce driver. The interactive connect flow can afford to fail
-// faster since a real server responds to /global/health in well under a
-// second; this does NOT affect the timeout used for real session traffic.
+// faster since a real server answers the health probe in well under a
+// second (v1: /global/health, v2: /api/health — see server-protocol.ts);
+// this does NOT affect the timeout used for real session traffic.
 const CONNECTION_TEST_TIMEOUT_MS = 12_000
 
 // Cached auth so we can create directory-scoped clients without async SecureStore lookups
 interface ClientBase {
   baseUrl: string
   auth?: { username: string; password: string }
+  protocol: ServerProtocol
 }
 
 interface ConnectionsState {
@@ -47,7 +50,7 @@ interface ConnectionsState {
     connection: ServerConnection,
     source: ConnectionTestSource,
     password?: string,
-  ) => Promise<{ ok: boolean; error?: string }>
+  ) => Promise<{ ok: boolean; error?: string; protocol?: ServerProtocol }>
   updateConnection: (id: string, updates: Partial<ServerConnection>, password?: string) => Promise<void>
   refreshProject: () => Promise<void>
   // Create a one-off client pointing at a specific directory (for cross-project operations).
@@ -67,9 +70,11 @@ function buildClient(
   url: string,
   directory?: string,
   auth?: { username: string; password: string },
+  protocol?: ServerProtocol,
 ): { client: Client; base: ClientBase } {
-  const base: ClientBase = { baseUrl: url, auth }
-  const client = createClient({ baseUrl: url, directory, auth })
+  const resolved: ServerProtocol = protocol ?? "v1"
+  const base: ClientBase = { baseUrl: url, auth, protocol: resolved }
+  const client = createClient({ baseUrl: url, directory, auth, protocol: resolved })
   return { client, base }
 }
 
@@ -105,7 +110,7 @@ export const useConnections = create<ConnectionsState>((set, get) => ({
       if (active) {
         const password = await SecureStore.getItemAsync(`${PASSWORDS_PREFIX}${active.id}`)
         const auth = buildAuth(active.username, password)
-        const built = buildClient(active.url, active.directory, auth)
+        const built = buildClient(active.url, active.directory, auth, active.protocol)
         client = built.client
         base = built.base
         // Commit client immediately so SSE + catalog can start; fetch metadata
@@ -175,7 +180,7 @@ export const useConnections = create<ConnectionsState>((set, get) => ({
     if (newConnection.active) {
       activeConnection = newConnection
       const auth = buildAuth(newConnection.username, password)
-      const built = buildClient(newConnection.url, newConnection.directory, auth)
+      const built = buildClient(newConnection.url, newConnection.directory, auth, newConnection.protocol)
       client = built.client
       base = built.base
 
@@ -221,7 +226,7 @@ export const useConnections = create<ConnectionsState>((set, get) => ({
         await SecureStore.setItemAsync(CONNECTIONS_KEY, JSON.stringify(connections))
         const password = await SecureStore.getItemAsync(`${PASSWORDS_PREFIX}${newActive.id}`)
         const auth = buildAuth(newActive.username, password)
-        const built = buildClient(newActive.url, newActive.directory, auth)
+        const built = buildClient(newActive.url, newActive.directory, auth, newActive.protocol)
         set({ connections, activeConnection: newActive, client: built.client, clientBase: built.base })
       } else {
         set({ connections, activeConnection: null, client: null, clientBase: null })
@@ -248,7 +253,7 @@ export const useConnections = create<ConnectionsState>((set, get) => ({
     if (active) {
       const password = await SecureStore.getItemAsync(`${PASSWORDS_PREFIX}${active.id}`)
       const auth = buildAuth(active.username, password)
-      const built = buildClient(active.url, active.directory, auth)
+      const built = buildClient(active.url, active.directory, auth, active.protocol)
       client = built.client
       base = built.base
 
@@ -289,15 +294,22 @@ export const useConnections = create<ConnectionsState>((set, get) => ({
   testConnection: async (connection, source, password) => {
     track(AnalyticsEvent.ConnectionAttempted, { source })
     try {
+      const auth = buildAuth(connection.username, password)
+      const headers = auth ? buildRequestHeaders({ auth }) : undefined
+      // Probe which wire protocol the server speaks (v1: /global/health,
+      // v2: /api/health) before the real health check, so a v2 server no
+      // longer fails with "Unexpected character: <" from its HTML fallback.
+      const { protocol } = await detectServerProtocol(connection.url, headers, fetch, CONNECTION_TEST_TIMEOUT_MS)
       const client = createClient({
         baseUrl: connection.url,
         directory: connection.directory,
-        auth: buildAuth(connection.username, password),
+        auth,
+        protocol,
       })
 
       await client.global.health(CONNECTION_TEST_TIMEOUT_MS)
       track(AnalyticsEvent.ConnectionSucceeded, { source })
-      return { ok: true }
+      return { ok: true, protocol }
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error)
       track(AnalyticsEvent.ConnectionFailed, { source, error_class: classifyConnectionError(message) })
@@ -323,7 +335,7 @@ export const useConnections = create<ConnectionsState>((set, get) => ({
       const active = connections.find((c) => c.id === id)!
       const password = await SecureStore.getItemAsync(`${PASSWORDS_PREFIX}${id}`)
       const auth = buildAuth(active.username, password)
-      const built = buildClient(active.url, active.directory, auth)
+      const built = buildClient(active.url, active.directory, auth, active.protocol)
 
       // Commit client immediately; fetch metadata fire-and-forget with stale guard
       const clientForMetadata = built.client
@@ -376,7 +388,7 @@ export const useConnections = create<ConnectionsState>((set, get) => ({
     // Reuse current client if directory matches
     const active = get().activeConnection
     if (active?.directory === directory) return get().client
-    return createClient({ baseUrl: base.baseUrl, directory, auth: base.auth })
+    return createClient({ baseUrl: base.baseUrl, directory, auth: base.auth, protocol: base.protocol })
   },
 
   switchDirectory: async (directory) => {

@@ -69,6 +69,8 @@
 //   node tests/fixtures/mock-opencode-server.ts --port 4097 --fail-auth
 //   node tests/fixtures/mock-opencode-server.ts --port 4098 --seed-sessions
 //   node tests/fixtures/mock-opencode-server.ts --port 4100 --seed-diff
+//   node tests/fixtures/mock-opencode-server.ts --port 4101 --protocol v2
+//   node tests/fixtures/mock-opencode-server.ts --port 4102 --protocol both
 
 import http from "node:http"
 import { randomUUID } from "node:crypto"
@@ -103,7 +105,24 @@ export interface MockServerOptions {
    * depend on it landing first.
    */
   seedDiff?: boolean
+  /**
+   * Which opencode wire protocol to emulate (see src/lib/server-protocol.ts):
+   * - "v1" (default): API at the URL root — GET /global/health, /session, ….
+   *   Existing E2E flows and tests assume this; the default keeps them green.
+   * - "v2": API under /api — GET /api/health (+pid), /api/session, ….
+   *   /global/health answers 200 with the web-UI HTML fallback (exactly what
+   *   a real v2 server does — and what used to break the app's health check
+   *   with "Unexpected character: <"), every other root-mounted route 404s,
+   *   and /api/global/* 404s (no such namespace on v2).
+   * - "both": v1 routes plus /api/* aliases (mirrors late v1, e.g. 1.18.x).
+   */
+  protocol?: "v1" | "v2" | "both"
 }
+
+// Minimal web-UI stand-in for v2 mode's /global/health SPA fallback: just
+// enough HTML to exercise the client's "200 but HTML, not JSON" handling.
+const MOCK_SPA_PAGE =
+  "<!doctype html><html><head><title>OpenCode</title></head><body><div id=\"root\"></div></body></html>"
 
 interface StoredSession {
   id: string
@@ -213,6 +232,7 @@ export function createMockOpencodeServer(opts: MockServerOptions) {
     replyDelayMs = 300,
     seedSessions = false,
     seedDiff = false,
+    protocol = "v1",
   } = opts
 
   const sessions = new Map<string, StoredSession>()
@@ -405,7 +425,7 @@ export function createMockOpencodeServer(opts: MockServerOptions) {
 
   const server = http.createServer((req, res) => {
     const url = new URL(req.url || "/", `http://localhost:${port}`)
-    const path = url.pathname
+    let path = url.pathname
     const method = req.method || "GET"
 
     // Per-request logging: proves whether the request ever reached the mock
@@ -417,6 +437,34 @@ export function createMockOpencodeServer(opts: MockServerOptions) {
     if (failAuth) {
       unauthorized(res)
       return
+    }
+
+    // v2-mode routing (see the `protocol` option): the whole JSON API lives
+    // under /api. /global/health falls through to the web UI (200 HTML —
+    // the real v2 behavior that broke naive health checks), root-mounted
+    // API routes 404, and /api/global/* never exists.
+    if (protocol === "v2" || protocol === "both") {
+      if (method === "GET" && path === "/api/health") {
+        return json(res, 200, { healthy: true, version: "0.0.0-mock-v2", pid: { mock: true } })
+      }
+    }
+    if (protocol === "v2") {
+      if (method === "GET" && path === "/global/health") {
+        res.writeHead(200, { "Content-Type": "text/html" })
+        res.end(MOCK_SPA_PAGE)
+        return
+      }
+      if (!path.startsWith("/api/")) {
+        return json(res, 404, { error: `mock-opencode-server: no handler for ${method} ${path} (v2 mode)` })
+      }
+    }
+    if ((protocol === "v2" || protocol === "both") && path.startsWith("/api/")) {
+      if (path === "/api/event") {
+        path = "/global/event"
+      } else if (!path.startsWith("/api/global/")) {
+        path = path.slice("/api".length)
+      }
+      // /api/global/* intentionally left as-is -> final 404 below.
     }
 
     if (method === "GET" && path === "/global/health") {
@@ -692,13 +740,29 @@ export function createMockOpencodeServer(opts: MockServerOptions) {
   }
 }
 
-function parseArgs(argv: string[]): { port: number; failAuth: boolean; seedSessions: boolean; seedDiff: boolean } {
-  const opts = { port: 4096, failAuth: false, seedSessions: false, seedDiff: false }
+function parseArgs(argv: string[]): {
+  port: number
+  failAuth: boolean
+  seedSessions: boolean
+  seedDiff: boolean
+  protocol: "v1" | "v2" | "both"
+} {
+  const opts: { port: number; failAuth: boolean; seedSessions: boolean; seedDiff: boolean; protocol: "v1" | "v2" | "both" } = {
+    port: 4096,
+    failAuth: false,
+    seedSessions: false,
+    seedDiff: false,
+    protocol: "v1",
+  }
   for (let i = 0; i < argv.length; i++) {
     if (argv[i] === "--port") opts.port = Number(argv[++i])
     else if (argv[i] === "--fail-auth") opts.failAuth = true
     else if (argv[i] === "--seed-sessions") opts.seedSessions = true
     else if (argv[i] === "--seed-diff") opts.seedDiff = true
+    else if (argv[i] === "--protocol") {
+      const p = argv[++i]
+      if (p === "v1" || p === "v2" || p === "both") opts.protocol = p
+    }
   }
   return opts
 }
@@ -711,7 +775,7 @@ if (invokedDirectly) {
   const mock = createMockOpencodeServer(opts)
   mock.listen().then(() => {
     console.log(
-      `[mock-opencode-server] listening on ${mock.url} (failAuth=${opts.failAuth}, seedSessions=${opts.seedSessions}, seedDiff=${opts.seedDiff})`,
+      `[mock-opencode-server] listening on ${mock.url} (failAuth=${opts.failAuth}, seedSessions=${opts.seedSessions}, seedDiff=${opts.seedDiff}, protocol=${opts.protocol})`,
     )
   })
   const shutdown = () => {

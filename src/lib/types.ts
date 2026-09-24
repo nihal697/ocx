@@ -1,6 +1,12 @@
 // Connection types for multiple server support
 export type ConnectionType = "local" | "tunnel" | "cloud"
 
+// Wire protocol the server speaks — see src/lib/server-protocol.ts.
+// v1 serves the API at the URL root (/global/health, /session, …);
+// v2 serves it under /api (/api/health, /api/session, …).
+import type { ServerProtocol } from "./sdk"
+export type { ServerProtocol } from "./sdk"
+
 export interface ServerConnection {
   id: string
   name: string
@@ -9,6 +15,10 @@ export interface ServerConnection {
   // For auth
   username?: string
   // Password stored separately in SecureStore
+  // Negotiated opencode wire protocol. Optional so connections stored
+  // before protocol detection existed keep working as v1 (the previous
+  // behavior); set by testConnection()/addConnection after probing.
+  protocol?: ServerProtocol
   // Directory to use for this connection
   directory?: string
   // When last successfully connected

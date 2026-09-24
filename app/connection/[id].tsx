@@ -105,6 +105,11 @@ export default function EditConnectionScreen() {
     )
 
     if (result.ok) {
+      // Persist the negotiated wire protocol so the saved connection keeps
+      // speaking the server's dialect (v1 vs v2) after this screen closes.
+      if (result.protocol && result.protocol !== connection.protocol) {
+        await updateConnection(connection.id, { protocol: result.protocol })
+      }
       setIsTesting(false)
       Alert.alert(t("connection.edit.alerts.successTitle"), t("connection.edit.alerts.successMessage"))
       return

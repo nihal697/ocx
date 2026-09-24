@@ -8,6 +8,7 @@ import * as SecureStore from "expo-secure-store"
 import appJson from "../../app.json"
 import { log, formatLogLines } from "./logbuffer"
 import { type Classification, type ProbeAttempt, type ParsedUrl, parseUrl, classify } from "./diagnostics-classify"
+import { probeHealthPath, V1_HEALTH_PATH, V2_HEALTH_PATH } from "./server-protocol"
 import { chatwootConfigured, sendSupportReport } from "./chatwoot"
 import { hasTelemetryConsent, loadTelemetryConsent } from "./telemetry"
 import { redactHostAndUrls } from "./scrub"
@@ -79,24 +80,53 @@ export async function probeConnection(url: string, auth?: { username: string; pa
   const headers: Record<string, string> = {}
   if (auth) headers["Authorization"] = `Basic ${btoa(`${auth.username}:${auth.password}`)}`
 
-  let health: ProbeAttempt
+  let healthV1: ProbeAttempt
+  let healthV2: ProbeAttempt
   let root: ProbeAttempt
   let internet: ProbeAttempt
 
   if (parsed.valid) {
     const base = `${parsed.scheme}://${parsed.host}:${parsed.port}`
-    ;[health, root, internet] = await Promise.all([
-      timedFetch("health", `${base}/global/health`, { headers }),
+    const probeHealth = async (name: string, path: "/global/health" | "/api/health"): Promise<ProbeAttempt> => {
+      const target = `${base}${path}`
+      const start = Date.now()
+      // Body-aware probe (not just HTTP status): a v2 server answers the v1
+      // /global/health path with 200 + the web UI HTML, which must NOT count
+      // as "healthy" — that lie produced the old "connection actually works
+      // now" report next to a JSON parse failure.
+      const probe = await probeHealthPath(base, path, headers, fetch, PROBE_TIMEOUT_MS)
+      const durationMs = Date.now() - start
+      if (probe.ok) return { name, target, ok: true, status: probe.httpStatus, durationMs }
+      return { name, target, ok: false, status: probe.httpStatus, durationMs, error: probe.error }
+    }
+    ;[healthV1, healthV2, root, internet] = await Promise.all([
+      probeHealth("health-v1", V1_HEALTH_PATH),
+      probeHealth("health-v2", V2_HEALTH_PATH),
       timedFetch("server-root", `${base}/`, { headers }, { requireOk: false }),
       timedFetch("internet", INTERNET_CHECK_URL),
     ])
   } else {
-    const skipped: ProbeAttempt = { name: "health", target: url, ok: false, durationMs: 0, error: "skipped: malformed url" }
-    health = skipped
-    root = { ...skipped, name: "server-root" }
+    const skipped = (name: string): ProbeAttempt => ({ name, target: url, ok: false, durationMs: 0, error: "skipped: malformed url" })
+    healthV1 = skipped("health-v1")
+    healthV2 = skipped("health-v2")
+    root = skipped("server-root")
     internet = await timedFetch("internet", INTERNET_CHECK_URL)
   }
 
+  // classify() reasons about a single health outcome: healthy when EITHER
+  // dialect answers with valid JSON; otherwise merge both failures so the
+  // report shows what each endpoint actually returned.
+  const health: ProbeAttempt = {
+    name: "health",
+    target: healthV1.ok ? healthV1.target : healthV2.target,
+    ok: healthV1.ok || healthV2.ok,
+    status: healthV1.status ?? healthV2.status,
+    durationMs: Math.max(healthV1.durationMs, healthV2.durationMs),
+    error:
+      healthV1.ok || healthV2.ok
+        ? undefined
+        : [`v1 (${V1_HEALTH_PATH}): ${healthV1.error ?? `HTTP ${healthV1.status ?? "error"}`}`, `v2 (${V2_HEALTH_PATH}): ${healthV2.error ?? `HTTP ${healthV2.status ?? "error"}`}`].join("; "),
+  }
   const { classification, summary } = classify(parsed, health, internet, root)
 
   const report: DiagnosticReport = {
@@ -107,7 +137,7 @@ export async function probeConnection(url: string, auth?: { username: string; pa
     host: parsed.host,
     port: parsed.port,
     isHostname: parsed.isHostname,
-    attempts: [health, root, internet],
+    attempts: [healthV1, healthV2, root, internet],
     device: {
       platform: Platform.OS,
       osVersion: String(Platform.Version),

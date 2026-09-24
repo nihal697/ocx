@@ -7,9 +7,21 @@ import { buildRequestHeaders } from "./headers"
 import { SSEParser } from "./sse"
 import { apiErrorFor } from "./api-error"
 import { loadSessionList } from "./session-list"
+import {
+  apiPath,
+  detectServerProtocol,
+  probeHealthPath,
+  V1_HEALTH_PATH,
+  V2_HEALTH_PATH,
+  type FetchFn,
+  type ServerProtocol,
+} from "./server-protocol"
 import type { FileRoot } from "./file-roots"
 
 export { ApiAuthError, isAuthError } from "./api-error"
+export { apiPath, detectServerProtocol, probeHealthPath, V1_HEALTH_PATH, V2_HEALTH_PATH }
+export type { FetchFn, ServerProtocol }
+export type { DetectedProtocol, HealthProbe } from "./server-protocol"
 
 export interface ClientConfig {
   baseUrl: string
@@ -18,6 +30,13 @@ export interface ClientConfig {
     username: string
     password: string
   }
+  // Opencode wire protocol the server speaks. v1 serves the API at the URL
+  // root (/global/health, /session, …); v2 serves it under /api
+  // (/api/health, /api/session, …). Defaults to "v1" so connections stored
+  // before protocol detection existed keep working unchanged; use
+  // detectServerProtocol() (or the store's testConnection, which detects
+  // and persists it) to pick this up for v2 servers.
+  protocol?: ServerProtocol
 }
 
 export interface Session {
@@ -176,7 +195,10 @@ export interface Event {
 
 export interface HealthResponse {
   healthy: boolean
-  version: string
+  // Present on real servers (v1 sends version, v2 sends version + pid);
+  // optional so version-less / mock health bodies still typecheck.
+  version?: string
+  pid?: unknown
 }
 
 const REQUEST_TIMEOUT_MS = 30_000
@@ -206,7 +228,7 @@ async function request<T>(
   options: RequestInit = {},
   timeoutMs?: number,
 ): Promise<T> {
-  const url = `${config.baseUrl}${path}`
+  const url = `${config.baseUrl}${apiPath(config.protocol ?? "v1", path)}`
   const headers = { ...createHeaders(config), ...options.headers }
   const response = await fetchWithTimeout(
     url,
@@ -222,7 +244,21 @@ async function request<T>(
     throw apiErrorFor(response.status, `API Error: ${response.status} - ${error}`)
   }
 
-  return response.json()
+  // Parse defensively: a 2xx with an HTML body means the URL serves the web
+  // UI (or a wrong path), not the API — historically this surfaced as a raw
+  // "JSON Parse error: Unexpected character: <" (v2 servers answer the v1
+  // /global/health probe with the SPA fallback page). Throw an actionable
+  // message instead so connect-time diagnostics can classify it.
+  const contentType = response.headers?.get?.("content-type") ?? ""
+  const text = await response.text()
+  if (!/json/i.test(contentType) && /^\s*</.test(text)) {
+    throw new Error(`Server returned a web page (HTML) instead of JSON for ${path}. Wrong server URL path or server version?`)
+  }
+  try {
+    return JSON.parse(text) as T
+  } catch {
+    throw new Error(`Server returned a non-JSON response for ${path}`)
+  }
 }
 
 async function fetchWithTimeout(url: string, options: RequestInit = {}, timeoutMs: number = REQUEST_TIMEOUT_MS): Promise<Response> {
@@ -259,6 +295,11 @@ export function createClient(config: ClientConfig) {
   // reconstructs a clean URL, reports "works now"). A bare URL with no
   // trailing slash is untouched.
   config = { ...config, baseUrl: config.baseUrl.replace(/\/+$/, "") }
+  const protocol: ServerProtocol = config.protocol ?? "v1"
+  // Map one v1-shaped SDK path to this client's negotiated protocol (v2
+  // lives under /api — see server-protocol.ts). request() below applies
+  // this automatically; the direct-fetch call sites use api() explicitly.
+  const api = (path: string) => apiPath(protocol, path)
   return {
     global: {
       // `timeoutMs` overrides the default REQUEST_TIMEOUT_MS — used by the
@@ -268,7 +309,7 @@ export function createClient(config: ClientConfig) {
       // SSE event stream - returns async iterator
       // Pass an AbortSignal to cancel the connection
       async *events(signal?: AbortSignal): AsyncGenerator<Event> {
-        const url = `${config.baseUrl}/global/event`
+        const url = `${config.baseUrl}${api("/global/event")}`
         const headers = createHeaders(config)
         // Remove Content-Type for SSE (it's text/event-stream)
         delete (headers as Record<string, string>)["Content-Type"]
@@ -379,7 +420,7 @@ export function createClient(config: ClientConfig) {
         loadSessionList(
           {
             getExperimental: async (): Promise<Session[] | null> => {
-              const response = await fetchWithTimeout(`${config.baseUrl}/experimental/session`, {
+              const response = await fetchWithTimeout(`${config.baseUrl}${api("/experimental/session")}`, {
                 headers: createHeaders(config),
               })
               // Older servers lack this route — signal fallback to legacy /session.
@@ -434,7 +475,7 @@ export function createClient(config: ClientConfig) {
           variant?: string
         },
       ): Promise<void> => {
-        const url = `${config.baseUrl}/session/${sessionID}/prompt_async`
+        const url = `${config.baseUrl}${api(`/session/${sessionID}/prompt_async`)}`
         const headers = createHeaders(config)
         const body = JSON.stringify(params)
         const response = await fetchWithTimeout(url, {
@@ -460,7 +501,7 @@ export function createClient(config: ClientConfig) {
           parts?: Array<{ type: "file"; mime: string; url: string; filename?: string }>
         },
       ): Promise<void> => {
-        const url = `${config.baseUrl}/session/${sessionID}/command`
+        const url = `${config.baseUrl}${api(`/session/${sessionID}/command`)}`
         const headers = createHeaders(config)
 
         const response = await fetchWithTimeout(url, {
@@ -565,7 +606,7 @@ export function createClient(config: ClientConfig) {
       connectUrl: (ptyID: string, ticket: string, cursor = -1) => {
         const ws = config.baseUrl.replace(/^http/, "ws")
         const dir = config.directory ? `&directory=${encodeURIComponent(config.directory)}` : ""
-        return `${ws}/pty/${ptyID}/connect?ticket=${encodeURIComponent(ticket)}&cursor=${cursor}${dir}`
+        return `${ws}${api(`/pty/${ptyID}/connect`)}?ticket=${encodeURIComponent(ticket)}&cursor=${cursor}${dir}`
       },
     },
 

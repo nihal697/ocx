@@ -185,13 +185,15 @@ export default function AddConnectionScreen() {
     )
 
     if (result.ok) {
-      // Save and go back
+      // Save and go back (carrying the wire protocol testConnection
+      // negotiated, so v2 servers keep working after the save).
       try {
         await addConnection(
           {
             name: name.trim() || t("connection.shared.namePlaceholder"),
             type: "local",
             url: serverUrl,
+            protocol: result.protocol,
           },
           password || undefined,
         )
@@ -268,6 +270,7 @@ export default function AddConnectionScreen() {
             url: url.trim(),
             directory: directory.trim() || undefined,
             username: username.trim() || undefined,
+            protocol: result.protocol,
           },
           password || undefined,
         )
