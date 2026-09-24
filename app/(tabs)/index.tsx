@@ -86,8 +86,11 @@ function SessionItem({
     ])
   }
 
-  // Extract short directory name from session
-  const shortDir = session.directory ? session.directory.split("/").filter(Boolean).pop() : null
+  // Extract short directory name from session. Split on both separators:
+  // Windows servers report backslash paths (C:\...\proj) which never split
+  // on "/" — without this the badge renders the entire path, wraps to two
+  // lines, and overflows under the chevron.
+  const shortDir = session.directory ? session.directory.split(/[/\\]/).filter(Boolean).pop() : null
 
   const renderRightActions = () => (
     <View style={styles.swipeActions}>
@@ -125,7 +128,7 @@ function SessionItem({
       >
       <View style={styles.sessionContent}>
         <View style={styles.sessionHeader}>
-          <Text style={[styles.sessionTitle, isDark && styles.textDark]} numberOfLines={1}>
+          <Text style={[styles.sessionTitle, isDark && styles.textDark]} numberOfLines={1} ellipsizeMode="tail">
             {session.title || t("sessionsList.untitledSession")}
           </Text>
         </View>
@@ -141,7 +144,13 @@ function SessionItem({
           {shortDir && (
             <View style={styles.sessionDirBadge}>
               <Ionicons name="folder-outline" size={12} color={isDark ? "#888888" : "#666666"} />
-              <Text style={[styles.sessionDirText, isDark && styles.metaDark]}>{shortDir}</Text>
+              <Text
+                style={[styles.sessionDirText, isDark && styles.metaDark]}
+                numberOfLines={1}
+                ellipsizeMode="middle"
+              >
+                {shortDir}
+              </Text>
             </View>
           )}
         </View>
@@ -1138,6 +1147,8 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   sessionTitle: {
+    flex: 1,
+    flexShrink: 1,
     fontSize: 16,
     fontWeight: "500",
     color: "#0a0a0a",
@@ -1149,13 +1160,17 @@ const styles = StyleSheet.create({
   sessionMeta: {
     fontSize: 13,
     color: "#666666",
+    flexShrink: 0,
   },
   sessionMetaRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
+    gap: 8,
   },
   sessionDirBadge: {
+    flex: 1,
+    flexShrink: 1,
     flexDirection: "row",
     alignItems: "center",
     gap: 4,
@@ -1163,8 +1178,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 6,
     paddingVertical: 2,
     borderRadius: 4,
+    overflow: "hidden",
   },
   sessionDirText: {
+    flex: 1,
+    flexShrink: 1,
     fontSize: 11,
     color: "#666666",
   },
