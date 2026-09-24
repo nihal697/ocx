@@ -16,10 +16,9 @@ name: iOS CI
 # typecheck/test job (and the gated macOS build) on every PR keeps the required
 # check satisfiable. See #143 (docs PR stuck) for why.
 on:
-  pull_request:
-    branches: [main]
-  push:
-    branches: [main]
+  # OCX is Android-only and ships GitHub-direct APKs: iOS builds are manual
+  # via workflow_dispatch. (Upstream ran this on every push/PR.)
+  workflow_dispatch:
 
 # Cancel superseded runs for the same ref (e.g. new push to an open PR).
 concurrency:
