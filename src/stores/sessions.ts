@@ -131,7 +131,17 @@ export const useSessions = create<SessionsState>((set, get) => ({
       const sessions = await client.session.list({ roots: true, limit: 50 })
       set({ sessions, isLoading: false })
     } catch (error) {
-      set({ error: "Failed to load sessions", isLoading: false })
+      // One silent retry: list loads fire on every foreground/focus, exactly
+      // when the radio is waking up or Tailscale is re-establishing — a single
+      // transient blip shouldn't paint a persistent red bar. Only the second
+      // consecutive failure surfaces to the user.
+      try {
+        await new Promise((r) => setTimeout(r, 1500))
+        const sessions = await client.session.list({ roots: true, limit: 50 })
+        set({ sessions, isLoading: false })
+      } catch {
+        set({ error: "Failed to load sessions", isLoading: false })
+      }
     }
   },
 

@@ -118,8 +118,18 @@ function SessionItem({
     </View>
   )
 
+  // Deliberate swipe physics: the list scrolls vertically, so a light or
+  // diagonal touch must never pop the actions open. friction + a high open
+  // threshold demand an intentional horizontal drag; no overshoot keeps the
+  // motion controlled instead of springy.
   return (
-    <Swipeable ref={swipeRef} renderRightActions={renderRightActions}>
+    <Swipeable
+      ref={swipeRef}
+      renderRightActions={renderRightActions}
+      friction={2}
+      overshootRight={false}
+      rightThreshold={96}
+    >
       <TouchableOpacity
         style={[styles.sessionItem, isDark && styles.sessionItemDark]}
         onPress={onPress}
@@ -665,9 +675,11 @@ export default function SessionsScreen() {
       </TouchableOpacity>
 
       {error && (
-        <View style={styles.errorBar}>
-          <Text style={styles.errorText}>{error}</Text>
-        </View>
+        <TouchableOpacity style={styles.errorBar} onPress={() => void onRefresh()} testID="sessions-error-retry">
+          <Text style={styles.errorText}>
+            {error} · {t("common.retry")}
+          </Text>
+        </TouchableOpacity>
       )}
 
       <UpdateBanner isDark={isDark} />
