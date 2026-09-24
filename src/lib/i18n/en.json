@@ -75,6 +75,11 @@
   },
   "session": {
     "titleFallback": "Session",
+    "rename": {
+      "title": "Rename session",
+      "failedTitle": "Rename failed",
+      "failedMessage": "Could not rename the session. Check your connection and try again."
+    },
     "toolbar": {
       "auto": "Auto"
     },
@@ -235,6 +240,7 @@
   },
   "sessionsList": {
     "untitledSession": "Untitled Session",
+    "searchPlaceholder": "Search sessions...",
     "time": {
       "justNow": "Just now",
       "minutesAgo": "{{count}}m ago",
@@ -243,7 +249,8 @@
     },
     "filesCount": "{{count}} files",
     "actions": {
-      "rename": "Rename"
+      "rename": "Rename",
+      "archive": "Archive"
     },
     "alerts": {
       "renameFailedTitle": "Rename failed",
@@ -252,6 +259,10 @@
       "deleteMessage": "Delete \"{{title}}\"?",
       "deleteFailedTitle": "Delete failed",
       "deleteFailedMessage": "Could not delete the session. Please try again.",
+      "archiveTitle": "Archive Session",
+      "archiveMessage": "Archive \"{{title}}\"? It will disappear from the list.",
+      "archiveFailedTitle": "Archive failed",
+      "archiveFailedMessage": "Could not archive the session. Please try again.",
       "createFailedMessage": "Failed to create session. Check your connection and try again."
     },
     "empty": {

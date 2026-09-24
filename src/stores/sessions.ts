@@ -55,6 +55,8 @@ interface SessionsState {
   loadOlderMessages: () => Promise<void>
   createSession: (title?: string) => Promise<Session | null>
   deleteSession: (sessionID: string) => Promise<void>
+  renameSession: (sessionID: string, title: string) => Promise<boolean>
+  archiveSession: (sessionID: string, archived?: boolean) => Promise<boolean>
   sendMessage: (
     text: string,
     model?: { providerID: string; modelID: string },
@@ -280,6 +282,51 @@ export const useSessions = create<SessionsState>((set, get) => ({
     }
   },
 
+  renameSession: async (sessionID, title) => {
+    const session = get().sessions.find((s) => s.id === sessionID) ?? get().currentSession
+    const client = clientFor(session?.directory)
+    if (!client) {
+      set({ error: "No active connection" })
+      return false
+    }
+
+    try {
+      const updated = await client.session.update(sessionID, { title })
+      const nextTitle = updated?.title ?? title
+      set((state) => ({
+        sessions: state.sessions.map((s) => (s.id === sessionID ? { ...s, title: nextTitle } : s)),
+        currentSession:
+          state.currentSession?.id === sessionID
+            ? { ...state.currentSession, title: nextTitle }
+            : state.currentSession,
+      }))
+      return true
+    } catch (error) {
+      set({ error: "Failed to rename session" })
+      return false
+    }
+  },
+
+  archiveSession: async (sessionID, archived = true) => {
+    const session = get().sessions.find((s) => s.id === sessionID)
+    const client = clientFor(session?.directory)
+    if (!client) {
+      set({ error: "No active connection" })
+      return false
+    }
+
+    try {
+      await client.session.update(sessionID, { time: { archived: archived ? Date.now() : 0 } })
+      // Archived sessions disappear from the server list — drop locally and
+      // reload to stay in sync rather than guessing server filtering.
+      await get().loadSessions()
+      return true
+    } catch (error) {
+      set({ error: "Failed to archive session" })
+      return false
+    }
+  },
+
   sendMessage: async (text, model, agent, files, variant) => {
     const client = clientFor(get().currentSession?.directory)
     const session = get().currentSession
@@ -348,6 +395,29 @@ export const useSessions = create<SessionsState>((set, get) => ({
       // streamed response) so a failure here can propagate to the caller — SSE
       // events still update messages/parts/status in real-time on success.
       await client.session.prompt(session.id, { parts: promptParts, model, agent, variant })
+
+      // Auto-name untitled sessions from the first message so the list shows
+      // something meaningful instead of a blank fallback. Fire-and-forget:
+      // a failed rename must never surface as a send error.
+      if (!session.title?.trim() && text?.trim()) {
+        const firstLine = text.split("\n").map((l) => l.trim()).find(Boolean) ?? ""
+        const autoTitle = firstLine.slice(0, 48)
+        if (autoTitle) {
+          client.session
+            .update(session.id, { title: autoTitle })
+            .then((updated) => {
+              const next = updated?.title ?? autoTitle
+              set((state) => ({
+                sessions: state.sessions.map((s) => (s.id === session.id ? { ...s, title: next } : s)),
+                currentSession:
+                  state.currentSession?.id === session.id
+                    ? { ...state.currentSession, title: next }
+                    : state.currentSession,
+              }))
+            })
+            .catch(() => {})
+        }
+      }
     } catch (err) {
       console.error("[sendMessage] error:", err)
       const stillCurrent = get().currentSession?.id === session.id

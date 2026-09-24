@@ -75,6 +75,11 @@
   },
   "session": {
     "titleFallback": "会话",
+    "rename": {
+      "title": "重命名会话",
+      "failedTitle": "重命名失败",
+      "failedMessage": "无法重命名该会话。请检查连接后重试。"
+    },
     "toolbar": {
       "auto": "自动"
     },
@@ -235,6 +240,7 @@
   },
   "sessionsList": {
     "untitledSession": "未命名会话",
+    "searchPlaceholder": "搜索会话…",
     "time": {
       "justNow": "刚刚",
       "minutesAgo": "{{count}} 分钟前",
@@ -243,7 +249,8 @@
     },
     "filesCount": "{{count}} 个文件",
     "actions": {
-      "rename": "重命名"
+      "rename": "重命名",
+      "archive": "归档"
     },
     "alerts": {
       "renameFailedTitle": "重命名失败",
@@ -252,6 +259,10 @@
       "deleteMessage": "删除 \"{{title}}\"？",
       "deleteFailedTitle": "删除失败",
       "deleteFailedMessage": "无法删除该会话。请重试。",
+      "archiveTitle": "归档会话",
+      "archiveMessage": "归档 \"{{title}}\"？它将从列表中消失。",
+      "archiveFailedTitle": "归档失败",
+      "archiveFailedMessage": "无法归档该会话。请重试。",
       "createFailedMessage": "创建会话失败。请检查网络连接后重试。"
     },
     "empty": {

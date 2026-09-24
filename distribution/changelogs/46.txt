@@ -1,0 +1,6 @@
+v0.4.19 — Session rename, auto-naming, search, swipe actions
+
+• Tap the session title at the top of a chat to rename it.
+• New sessions name themselves from your first message instead of staying untitled.
+• Search the session list by title or folder.
+• Swipe a session left for Rename, Archive, or Delete (long-press menu still works).

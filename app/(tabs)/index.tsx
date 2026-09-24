@@ -18,6 +18,7 @@ import {
 } from "react-native"
 import { router, useFocusEffect } from "expo-router"
 import { Ionicons } from "@expo/vector-icons"
+import { Swipeable } from "react-native-gesture-handler"
 import { useTranslation } from "react-i18next"
 import { useSessions } from "../../src/stores/sessions"
 import { useConnections } from "../../src/stores/connections"
@@ -49,14 +50,17 @@ function SessionItem({
   session,
   isDark,
   onRename,
+  onArchive,
   onDelete,
 }: {
   session: Session
   isDark: boolean
   onRename: () => void
+  onArchive: () => void
   onDelete: () => void
 }) {
   const { t } = useTranslation()
+  const swipeRef = useRef<Swipeable>(null)
 
   const onPress = () => {
     router.push({
@@ -65,10 +69,16 @@ function SessionItem({
     })
   }
 
+  const closeAnd = (fn: () => void) => () => {
+    swipeRef.current?.close()
+    fn()
+  }
+
   const onLongPress = () => {
     Alert.alert(session.title || t("sessionsList.untitledSession"), undefined, [
       { text: t("common.cancel"), style: "cancel" },
       { text: t("sessionsList.actions.rename"), onPress: onRename },
+      { text: t("sessionsList.actions.archive"), onPress: onArchive },
       { text: t("common.delete"), style: "destructive", onPress: onDelete },
     ])
   }
@@ -76,13 +86,40 @@ function SessionItem({
   // Extract short directory name from session
   const shortDir = session.directory ? session.directory.split("/").filter(Boolean).pop() : null
 
+  const renderRightActions = () => (
+    <View style={styles.swipeActions}>
+      <TouchableOpacity
+        style={[styles.swipeButton, styles.swipeRename]}
+        onPress={closeAnd(onRename)}
+        testID={`session-row-rename-${session.id}`}
+      >
+        <Text style={styles.swipeText}>{t("sessionsList.actions.rename")}</Text>
+      </TouchableOpacity>
+      <TouchableOpacity
+        style={[styles.swipeButton, styles.swipeArchive]}
+        onPress={closeAnd(onArchive)}
+        testID={`session-row-archive-${session.id}`}
+      >
+        <Text style={styles.swipeText}>{t("sessionsList.actions.archive")}</Text>
+      </TouchableOpacity>
+      <TouchableOpacity
+        style={[styles.swipeButton, styles.swipeDelete]}
+        onPress={closeAnd(onDelete)}
+        testID={`session-row-delete-${session.id}`}
+      >
+        <Text style={styles.swipeText}>{t("common.delete")}</Text>
+      </TouchableOpacity>
+    </View>
+  )
+
   return (
-    <TouchableOpacity
-      style={[styles.sessionItem, isDark && styles.sessionItemDark]}
-      onPress={onPress}
-      onLongPress={onLongPress}
-      testID={`session-item-${session.id}`}
-    >
+    <Swipeable ref={swipeRef} renderRightActions={renderRightActions}>
+      <TouchableOpacity
+        style={[styles.sessionItem, isDark && styles.sessionItemDark]}
+        onPress={onPress}
+        onLongPress={onLongPress}
+        testID={`session-item-${session.id}`}
+      >
       <View style={styles.sessionContent}>
         <View style={styles.sessionHeader}>
           <Text style={[styles.sessionTitle, isDark && styles.textDark]} numberOfLines={1}>
@@ -107,7 +144,8 @@ function SessionItem({
         </View>
       </View>
       <Ionicons name="chevron-forward" size={20} color={isDark ? "#666666" : "#999999"} />
-    </TouchableOpacity>
+      </TouchableOpacity>
+    </Swipeable>
   )
 }
 
@@ -174,7 +212,7 @@ export default function SessionsScreen() {
   const creatingInFlight = useRef(false)
   const [serverProjects, setServerProjects] = useState<Project[]>([])
 
-  const { sessions, isLoading, error, loadSessions, createSession, deleteSession } = useSessions()
+  const { sessions, isLoading, error, loadSessions, createSession, deleteSession, renameSession, archiveSession } = useSessions()
 
   // Android edge-to-edge ignores adjustResize, so KeyboardAvoidingView's
   // behavior="height" can't keep the manual-path input above the keyboard —
@@ -204,6 +242,18 @@ export default function SessionsScreen() {
   // Directories collapsed in the grouped session list. Empty by default —
   // all groups start expanded (#67).
   const [collapsedDirs, setCollapsedDirs] = useState<Set<string>>(new Set())
+  const [searchQuery, setSearchQuery] = useState("")
+
+  // Filter before grouping so collapsed groups and counts reflect the search.
+  const visibleSessions = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase()
+    if (!q) return sessions
+    return sessions.filter(
+      (s) =>
+        (s.title || "").toLowerCase().includes(q) ||
+        (s.directory || "").toLowerCase().includes(q),
+    )
+  }, [sessions, searchQuery])
 
   const toggleGroup = useCallback((directory: string) => {
     setCollapsedDirs((prev) => {
@@ -217,9 +267,9 @@ export default function SessionsScreen() {
   // Flatten sessions into header+item rows. Skip headers entirely when
   // everything lives in one directory — a lone header adds noise, not clarity.
   const rows = useMemo<ListRow[]>(() => {
-    const groups = groupByDirectory(sessions)
+    const groups = groupByDirectory(visibleSessions)
     if (groups.length <= 1) {
-      return sessions.map((session) => ({ type: "session", session }))
+      return visibleSessions.map((session) => ({ type: "session", session }))
     }
     const out: ListRow[] = []
     for (const group of groups) {
@@ -236,7 +286,7 @@ export default function SessionsScreen() {
       }
     }
     return out
-  }, [sessions, collapsedDirs])
+  }, [visibleSessions, collapsedDirs])
 
   // Fetch server-known projects when the new session modal opens
   useEffect(() => {
@@ -285,24 +335,46 @@ export default function SessionsScreen() {
   const submitRename = useCallback(async () => {
     const title = renameText.trim()
     if (!title || !renaming || renamingInFlight.current) return
-    const renameClient = renaming.directory ? (clientForDirectory(renaming.directory) ?? client) : client
-    if (!renameClient) return
     renamingInFlight.current = true
     try {
-      await renameClient.session.update(renaming.id, { title })
-      setRenaming(null)
-      setRenameText("")
-      loadSessions()
+      const ok = await renameSession(renaming.id, title)
+      if (ok) {
+        setRenaming(null)
+        setRenameText("")
+      } else {
+        Alert.alert(t("sessionsList.alerts.renameFailedTitle"), t("sessionsList.alerts.renameFailedMessage"))
+      }
     } catch (err) {
       console.error("Rename failed:", err)
       Alert.alert(t("sessionsList.alerts.renameFailedTitle"), t("sessionsList.alerts.renameFailedMessage"))
     } finally {
       renamingInFlight.current = false
     }
-  }, [renaming, renameText, client, clientForDirectory, loadSessions, t])
+  }, [renaming, renameText, renameSession, t])
 
-  const handleDelete = useCallback(
+  const handleArchive = useCallback(
     (session: Session) => {
+      Alert.alert(
+        t("sessionsList.alerts.archiveTitle"),
+        t("sessionsList.alerts.archiveMessage", { title: session.title || t("sessionsList.untitledSession") }),
+        [
+          { text: t("common.cancel"), style: "cancel" },
+          {
+            text: t("sessionsList.actions.archive"),
+            onPress: async () => {
+              const ok = await archiveSession(session.id)
+              if (!ok) {
+                Alert.alert(t("sessionsList.alerts.archiveFailedTitle"), t("sessionsList.alerts.archiveFailedMessage"))
+              }
+            },
+          },
+        ],
+      )
+    },
+    [archiveSession, t],
+  )
+
+  const handleDelete = useCallback(    (session: Session) => {
       Alert.alert(
         t("sessionsList.alerts.deleteTitle"),
         t("sessionsList.alerts.deleteMessage", { title: session.title || t("sessionsList.untitledSession") }),
@@ -557,6 +629,26 @@ export default function SessionsScreen() {
 
       <UpdateBanner isDark={isDark} />
 
+      <View style={[styles.searchContainer, isDark && styles.searchContainerDark]}>
+        <Ionicons name="search-outline" size={16} color={isDark ? "#888888" : "#666666"} />
+        <TextInput
+          style={[styles.searchInput, isDark && styles.searchInputDark]}
+          placeholder={t("sessionsList.searchPlaceholder")}
+          placeholderTextColor={isDark ? "#666666" : "#999999"}
+          value={searchQuery}
+          onChangeText={setSearchQuery}
+          autoCapitalize="none"
+          autoCorrect={false}
+          returnKeyType="search"
+          testID="session-search-input"
+        />
+        {searchQuery.length > 0 && (
+          <TouchableOpacity onPress={() => setSearchQuery("")} hitSlop={8} testID="session-search-clear">
+            <Ionicons name="close-circle" size={16} color={isDark ? "#888888" : "#666666"} />
+          </TouchableOpacity>
+        )}
+      </View>
+
       <FlatList
         data={rows}
         keyExtractor={(row) => (row.type === "header" ? `dir:${row.directory}` : row.session.id)}
@@ -568,6 +660,7 @@ export default function SessionsScreen() {
               session={row.session}
               isDark={isDark}
               onRename={() => handleRename(row.session)}
+              onArchive={() => handleArchive(row.session)}
               onDelete={() => handleDelete(row.session)}
             />
           )
@@ -970,6 +1063,26 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: "#666666",
   },
+  searchContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginHorizontal: 16,
+    marginBottom: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    backgroundColor: "#f5f5f5",
+  },
+  searchContainerDark: { backgroundColor: "#1a1a1a" },
+  swipeActions: { flexDirection: "row", alignItems: "stretch" },
+  swipeButton: { justifyContent: "center", paddingHorizontal: 16 },
+  swipeRename: { backgroundColor: "#3b82f6" },
+  swipeArchive: { backgroundColor: "#f59e0b" },
+  swipeDelete: { backgroundColor: "#dc2626" },
+  swipeText: { color: "#ffffff", fontSize: 14, fontWeight: "600" },
+  searchInput: { flex: 1, fontSize: 15, color: "#0a0a0a", padding: 0 },
+  searchInputDark: { color: "#ffffff" },
   sessionItem: {
     flexDirection: "row",
     alignItems: "center",

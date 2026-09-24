@@ -11,6 +11,7 @@ import {
   Platform,
   ActivityIndicator,
   Alert,
+  Modal,
 } from "react-native"
 import { useLocalSearchParams, Stack, useRouter, useFocusEffect } from "expo-router"
 import { Ionicons } from "@expo/vector-icons"
@@ -101,11 +102,42 @@ export default function SessionScreen() {
     loadOlderMessages,
     revertToMessage,
     unrevertSession,
+    renameSession,
     error: sessionError,
   } = useSessions()
 
   // Derive sending state for this specific session
   const isSending = useSessions((s) => !!(currentSession && s.sending[currentSession.id]))
+
+  // Tap-to-rename for the header title
+  const [renaming, setRenaming] = useState(false)
+  const [renameText, setRenameText] = useState("")
+  const renamingInFlight = useRef(false)
+
+  const openRename = useCallback(() => {
+    setRenameText(currentSession?.title || "")
+    setRenaming(true)
+  }, [currentSession?.title])
+
+  const submitRename = useCallback(async () => {
+    const title = renameText.trim()
+    if (!title || !currentSession || renamingInFlight.current) return
+    renamingInFlight.current = true
+    try {
+      const ok = await renameSession(currentSession.id, title)
+      if (ok) {
+        setRenaming(false)
+        setRenameText("")
+      } else {
+        Alert.alert(t("session.rename.failedTitle"), t("session.rename.failedMessage"))
+      }
+    } catch (err) {
+      console.error("Rename failed:", err)
+      Alert.alert(t("session.rename.failedTitle"), t("session.rename.failedMessage"))
+    } finally {
+      renamingInFlight.current = false
+    }
+  }, [renameText, currentSession, renameSession, t])
 
   const { authenticateForMessage } = useAuth()
   const { client, clientForDirectory } = useConnections()
@@ -636,7 +668,19 @@ export default function SessionScreen() {
     <>
       <Stack.Screen
         options={{
-          title: currentSession?.title || t("session.titleFallback"),
+          headerTitle: () => (
+            <TouchableOpacity
+              onPress={openRename}
+              hitSlop={8}
+              style={s.headerTitleButton}
+              testID="session-rename-button"
+            >
+              <Text style={[s.headerTitleText, isDark && s.headerTitleTextDark]} numberOfLines={1}>
+                {currentSession?.title || t("session.titleFallback")}
+              </Text>
+              <Ionicons name="pencil-outline" size={14} color={isDark ? "#888888" : "#666666"} />
+            </TouchableOpacity>
+          ),
           headerRight: () => (
             <View style={s.headerRight}>
               {shortDir && (
@@ -656,6 +700,41 @@ export default function SessionScreen() {
           ),
         }}
       />
+
+      {/* Rename session */}
+      <Modal visible={renaming} animationType="fade" transparent>
+        <View style={s.modalOverlay}>
+          <View style={[s.modalCard, isDark && s.modalCardDark]}>
+            <Text style={[s.modalTitle, isDark && s.textDark]}>{t("session.rename.title")}</Text>
+            <TextInput
+              style={[s.renameInput, isDark && s.renameInputDark]}
+              value={renameText}
+              onChangeText={setRenameText}
+              autoFocus
+              maxLength={80}
+              returnKeyType="done"
+              onSubmitEditing={() => void submitRename()}
+              testID="session-rename-input"
+            />
+            <View style={s.modalButtons}>
+              <TouchableOpacity
+                style={[s.modalButton, isDark && s.modalButtonDark]}
+                onPress={() => setRenaming(false)}
+              >
+                <Text style={[s.modalButtonText, isDark && s.textDark]}>{t("common.cancel")}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[s.modalButton, s.modalButtonPrimary, !renameText.trim() && s.modalButtonDisabled]}
+                onPress={() => void submitRename()}
+                disabled={!renameText.trim()}
+                testID="session-rename-save"
+              >
+                <Text style={s.modalButtonPrimaryText}>{t("common.save")}</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
 
       <KeyboardAvoidingView
         style={[
@@ -1109,6 +1188,39 @@ const s = StyleSheet.create({
 
   // Header
   headerRight: { flexDirection: "row", alignItems: "center", gap: 8 },
+  headerTitleButton: { flexDirection: "row", alignItems: "center", gap: 6, maxWidth: 220 },
+  headerTitleText: { fontSize: 17, fontWeight: "600", color: "#0a0a0a" },
+  headerTitleTextDark: { color: "#ffffff" },
+  textDark: { color: "#ffffff" },
+
+  // Rename session modal
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 24,
+  },
+  modalCard: { backgroundColor: "#ffffff", borderRadius: 12, padding: 20, width: "100%" },
+  modalCardDark: { backgroundColor: "#1a1a1a" },
+  modalTitle: { fontSize: 17, fontWeight: "700", color: "#0a0a0a", marginBottom: 12 },
+  renameInput: {
+    borderWidth: 1,
+    borderColor: "#d4d4d4",
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 16,
+    color: "#0a0a0a",
+  },
+  renameInputDark: { borderColor: "#404040", backgroundColor: "#0a0a0a", color: "#ffffff" },
+  modalButtons: { flexDirection: "row", justifyContent: "flex-end", gap: 8, marginTop: 16 },
+  modalButton: { paddingHorizontal: 16, paddingVertical: 10, borderRadius: 8 },
+  modalButtonDark: { backgroundColor: "#2a2a2a" },
+  modalButtonText: { fontSize: 15, fontWeight: "600", color: "#0a0a0a" },
+  modalButtonPrimary: { backgroundColor: "#3b82f6" },
+  modalButtonDisabled: { opacity: 0.5 },
+  modalButtonPrimaryText: { fontSize: 15, fontWeight: "600", color: "#ffffff" },
   dirBadge: {
     flexDirection: "row",
     alignItems: "center",
