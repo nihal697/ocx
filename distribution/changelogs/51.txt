@@ -1,0 +1,4 @@
+v0.4.24 — Fix file attachments + auto-naming
+
+• File attachments actually work now (the reader used a removed Expo API).
+• Auto-naming works on server-titled sessions ("New session - ..."), not just blank ones.

@@ -611,9 +611,7 @@ export default function SessionScreen() {
           continue
         }
         try {
-          const base64 = await FileSystem.readAsStringAsync(asset.uri, {
-            encoding: "base64",
-          })
+          const base64 = await new FileSystem.File(asset.uri).base64()
           items.push({
             uri: asset.uri,
             mime: asset.mimeType || "application/octet-stream",

@@ -465,9 +465,13 @@ export const useSessions = create<SessionsState>((set, get) => ({
       await client.session.prompt(session.id, { parts: promptParts, model, agent, variant })
 
       // Auto-name untitled sessions from the first message so the list shows
-      // something meaningful instead of a blank fallback. Fire-and-forget:
-      // a failed rename must never surface as a send error.
-      if (!session.title?.trim() && text?.trim()) {
+      // something meaningful instead of a blank fallback.
+      // NOTE: the server pre-titles fresh sessions ("New session - <timestamp>"),
+      // so a merely-empty check never fires — treat those generic titles as
+      // renameable too. Fire-and-forget: a failed rename must never surface
+      // as a send error.
+      const GENERIC_TITLE = /^(new session|untitled( session)?|session)( - .*)?$/i
+      if (text?.trim() && (!session.title?.trim() || GENERIC_TITLE.test(session.title.trim()))) {
         const firstLine = text.split("\n").map((l) => l.trim()).find(Boolean) ?? ""
         const autoTitle = firstLine.slice(0, 48)
         if (autoTitle) {
