@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react"
 import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator } from "react-native"
 import { Ionicons } from "@expo/vector-icons"
 import { useTranslation } from "react-i18next"
+import { router } from "expo-router"
 import type { Message, Session, Todo } from "../../lib/sdk"
 import type { Provider } from "../../stores/catalog"
 import { useConnections } from "../../stores/connections"
@@ -65,6 +66,7 @@ export function SessionInfo({
   const client = useConnections((s) => s.client)
   const clientForDirectory = useConnections((s) => s.clientForDirectory)
   const [todos, setTodos] = useState<Todo[] | null>(null)
+  const [children, setChildren] = useState<Session[] | null>(null)
 
   // Agent todo list — fetched when the panel opens. Best effort: a missing
   // route (older server) or empty list simply hides the section.
@@ -80,6 +82,14 @@ export function SessionInfo({
       })
       .catch(() => {
         if (!cancelled) setTodos(null)
+      })
+    c.session
+      .children(session.id)
+      .then((list) => {
+        if (!cancelled) setChildren(Array.isArray(list) ? list : [])
+      })
+      .catch(() => {
+        if (!cancelled) setChildren(null)
       })
     return () => {
       cancelled = true
@@ -288,6 +298,30 @@ export function SessionInfo({
                 {todo.content}
               </Text>
             </View>
+          ))}
+        </View>
+      )}
+
+      {/* Forks (child sessions) */}
+      {children && children.length > 0 && (
+        <View style={s.todos}>
+          <Text style={[s.todosTitle, isDark && s.dimDark]}>{t("chat.sessionInfo.forks")}</Text>
+          {children.map((child) => (
+            <TouchableOpacity
+              key={child.id}
+              style={s.todoRow}
+              onPress={() =>
+                router.push({
+                  pathname: `/session/[id]`,
+                  params: { id: child.id, ...(child.directory ? { directory: child.directory } : {}) },
+                })
+              }
+            >
+              <Ionicons name="git-branch-outline" size={14} color={isDark ? "#666666" : "#999999"} />
+              <Text style={[s.todoText, isDark && s.dimDark]} numberOfLines={1}>
+                {child.title || t("chat.sessionInfo.untitledFork")}
+              </Text>
+            </TouchableOpacity>
           ))}
         </View>
       )}

@@ -317,6 +317,7 @@ export function createClient(config: ClientConfig) {
     project: {
       list: () => request<Project[]>(config, "/project"),
       current: () => request<Project>(config, "/project/current"),
+      initGit: () => request<Project>(config, "/project/git/init", { method: "POST" }),
     },
 
     // Server-side filesystem browsing, scoped to this client's directory
@@ -494,6 +495,22 @@ export function createClient(config: ClientConfig) {
 
       deleteMessage: (sessionID: string, messageID: string) =>
         request<void>(config, `/session/${sessionID}/message/${messageID}`, { method: "DELETE" }),
+
+      children: (sessionID: string) => request<Session[]>(config, `/session/${sessionID}/children`),
+
+      shell: (sessionID: string, params: { command: string; agent: string; model?: string }) =>
+        request<void>(config, `/session/${sessionID}/shell`, {
+          method: "POST",
+          body: JSON.stringify(params),
+        }),
+    },
+
+    instance: {
+      skill: () =>
+        request<Array<{ name: string; description?: string; location: string; content: string }>>(
+          config,
+          "/skill",
+        ),
     },
 
     permission: {
@@ -554,6 +571,13 @@ export function createClient(config: ClientConfig) {
           default: Record<string, string>
           connected: string[]
         }>(config, "/provider"),
+
+      authorize: (providerID: string) =>
+        request<{ url: string; method?: string } | undefined>(
+          config,
+          `/provider/${providerID}/oauth/authorize`,
+          { method: "POST", body: JSON.stringify({}) },
+        ),
     },
 
     config: {

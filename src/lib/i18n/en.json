@@ -435,6 +435,8 @@
       "summarize": "Summarize",
       "fork": "Fork",
       "todos": "Agent todos",
+      "forks": "Forks",
+      "untitledFork": "Untitled fork",
       "pills": {
         "in": "In",
         "out": "Out",

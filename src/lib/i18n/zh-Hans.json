@@ -435,6 +435,8 @@
       "summarize": "总结",
       "fork": "分支",
       "todos": "智能体待办",
+      "forks": "分支会话",
+      "untitledFork": "未命名分支",
       "pills": {
         "in": "输入",
         "out": "输出",
