@@ -1,3 +1,3 @@
-v0.4.20 — Attach any file, summarize, fork, todos
+v0.4.21 — Files tab, /shell, provider login
 
-Attach PDFs and any files from the + button. Summarize or fork sessions from the info panel, see agent todos, delete messages via long-press.
+Browse and search server files in the new Files tab. Run /shell commands, pick skills from slash, connect model providers from Settings.

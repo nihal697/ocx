@@ -2,7 +2,7 @@
   "expo": {
     "name": "OCX",
     "slug": "ocx-mobile",
-    "version": "0.4.20",
+    "version": "0.4.21",
     "orientation": "portrait",
     "scheme": "ocx",
     "userInterfaceStyle": "automatic",
@@ -35,7 +35,7 @@
     },
     "android": {
       "package": "com.ocx.app",
-      "versionCode": 47,
+      "versionCode": 48,
       "usesCleartextTraffic": true,
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",

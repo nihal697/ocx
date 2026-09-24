@@ -1,0 +1,6 @@
+v0.4.21 — Files tab, /shell, skills, provider login
+
+• New Files tab: browse server files, read text files, search code, init git repos.
+• New /shell slash command: run one-off shell commands in the session.
+• Slash list now includes instance skills.
+• Settings has a Model providers section: see what's connected, log in from the phone.

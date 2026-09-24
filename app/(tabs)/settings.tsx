@@ -13,6 +13,7 @@ import {
 import { Ionicons } from "@expo/vector-icons"
 import { useTranslation } from "react-i18next"
 import { useAuth } from "../../src/stores/auth"
+import { useConnections } from "../../src/stores/connections"
 import { useSettings } from "../../src/stores/settings"
 import {
   categories,
@@ -79,6 +80,56 @@ export default function SettingsScreen() {
   const { notifications, setNotification, locale, setLocale } = useSettings()
   const [osGranted, setOsGranted] = useState<boolean | null>(null)
   const [telemetryUpdating, setTelemetryUpdating] = useState(false)
+
+  // Model providers live on the server, not the phone. List them here so a
+  // key can be connected from the phone instead of the server terminal.
+  const { client } = useConnections()
+  const [providers, setProviders] = useState<Array<{ id: string; name: string; connected: boolean }>>([])
+  const [providersLoading, setProvidersLoading] = useState(false)
+
+  const loadProviders = useCallback(async () => {
+    if (!client) {
+      setProviders([])
+      return
+    }
+    setProvidersLoading(true)
+    try {
+      const res = await client.provider.list()
+      const connected = new Set(res.connected || [])
+      setProviders((res.all || []).map((p) => ({ id: p.id, name: p.name || p.id, connected: connected.has(p.id) })))
+    } catch {
+      setProviders([])
+    } finally {
+      setProvidersLoading(false)
+    }
+  }, [client])
+
+  useEffect(() => {
+    void loadProviders()
+  }, [loadProviders])
+
+  const handleConnectProvider = useCallback(
+    (providerID: string) => {
+      if (!client) return
+      void (async () => {
+        try {
+          const auth = await client.provider.authorize(providerID)
+          if (auth?.url) {
+            await Linking.openURL(auth.url)
+          } else {
+            Alert.alert(t("settings.models.noBrowserTitle"), t("settings.models.noBrowserMessage"))
+          }
+        } catch {
+          Alert.alert(t("settings.models.authFailedTitle"), t("settings.models.authFailedMessage"))
+        } finally {
+          // Credentials land server-side after the browser flow — reload so
+          // the row flips to connected without reopening Settings.
+          setTimeout(() => void loadProviders(), 3000)
+        }
+      })()
+    },
+    [client, loadProviders, t],
+  )
 
   // Settings is where a user goes to ask "what am I running?". Answer it, and if
   // a newer build exists say so here too — the banner on the sessions list is
@@ -256,6 +307,46 @@ export default function SettingsScreen() {
         />
       </SettingSection>
 
+      <SettingSection title={t("settings.sections.models")} isDark={isDark}>
+        {!client ? (
+          <SettingRow
+            icon="cloud-offline-outline"
+            label={t("settings.models.noConnection")}
+            isDark={isDark}
+          />
+        ) : providersLoading && providers.length === 0 ? (
+          <SettingRow
+            icon="cloud-outline"
+            label={t("settings.models.loading")}
+            isDark={isDark}
+          />
+        ) : providers.length === 0 ? (
+          <SettingRow
+            icon="cloud-offline-outline"
+            label={t("settings.models.empty")}
+            isDark={isDark}
+          />
+        ) : (
+          providers.map((p) => (
+            <SettingRow
+              key={p.id}
+              icon={p.connected ? "checkmark-circle" : "cloud-outline"}
+              label={p.name}
+              description={p.connected ? t("settings.models.connected") : t("settings.models.tapToConnect")}
+              isDark={isDark}
+              onPress={p.connected ? undefined : () => handleConnectProvider(p.id)}
+              right={
+                <Ionicons
+                  name={p.connected ? "checkmark" : "open-outline"}
+                  size={20}
+                  color={p.connected ? "#22c55e" : isDark ? "#666666" : "#999999"}
+                />
+              }
+            />
+          ))
+        )}
+      </SettingSection>
+
       <SettingSection title={t("settings.sections.about")} isDark={isDark}>
         <SettingRow
           icon="language"
@@ -289,7 +380,7 @@ export default function SettingsScreen() {
           label={t("settings.about.github.label")}
           description={t("settings.about.github.description")}
           isDark={isDark}
-          onPress={() => Linking.openURL("https://github.com/anomalyco/opencode")}
+          onPress={() => Linking.openURL("https://github.com/nihal697/ocx")}
           right={<Ionicons name="open-outline" size={20} color={isDark ? "#666666" : "#999999"} />}
         />
         <SettingRow

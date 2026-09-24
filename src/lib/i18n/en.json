@@ -14,7 +14,19 @@
       "security": "Security",
       "notifications": "Notifications",
       "privacy": "Privacy",
+      "models": "Model providers",
       "about": "About"
+    },
+    "models": {
+      "noConnection": "Connect to a server to manage model providers.",
+      "loading": "Loading providers...",
+      "empty": "No providers found on this server.",
+      "connected": "Connected",
+      "tapToConnect": "Tap to connect",
+      "noBrowserTitle": "No login page",
+      "noBrowserMessage": "This provider needs a key pasted on the server instead.",
+      "authFailedTitle": "Connection failed",
+      "authFailedMessage": "Could not start provider login. Check your connection and try again."
     },
     "security": {
       "biometricOpen": {
@@ -75,6 +87,9 @@
   },
   "session": {
     "titleFallback": "Session",
+    "slash": {
+      "skillFallback": "Skill"
+    },
     "rename": {
       "title": "Rename session",
       "failedTitle": "Rename failed",
@@ -133,6 +148,8 @@
       "deleteMessageFailedMessage": "Could not delete the message. Check your connection and try again.",
       "commandFailedTitle": "Command failed",
       "commandFailedMessage": "Could not run that command. Check your connection and try again.",
+      "shellUsageTitle": "Usage: /shell <command>",
+      "shellUsageMessage": "Type a shell command after /shell, e.g. /shell git status.",
       "replyFailedTitle": "Reply Failed",
       "replyFailedMessage": "Could not send your response. Please try again.",
       "rejectFailedTitle": "Reject Failed",
@@ -234,9 +251,29 @@
   "nav": {
     "sessionsTab": "Sessions",
     "connectionsTab": "Connections",
+    "filesTab": "Files",
     "settingsTab": "Settings",
     "addConnectionTitle": "Add Connection",
     "editConnectionTitle": "Edit Connection"
+  },
+  "files": {
+    "noConnection": "Connect to a server first, then browse its files here.",
+    "browseFailed": "Could not list files. Check your connection.",
+    "readFailedTitle": "Could not open file",
+    "readFailedMessage": "The file could not be read. Check your connection and try again.",
+    "binaryTitle": "Binary file",
+    "binaryMessage": "This file is not readable text.",
+    "truncated": "Showing the first 200,000 characters.",
+    "emptyDir": "Empty folder",
+    "searchPlaceholder": "Search code...",
+    "noMatches": "No matches",
+    "initGitTitle": "Init git repo?",
+    "initGitMessage": "Create a git repository in the current project.",
+    "initGitConfirm": "Init",
+    "initGitDoneTitle": "Done",
+    "initGitDoneMessage": "Git repository created.",
+    "initGitFailedTitle": "Failed",
+    "initGitFailedMessage": "Could not init git. Check your connection and try again."
   },
   "connectionsList": {
     "activeBadge": "Active",

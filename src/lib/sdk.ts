@@ -329,6 +329,23 @@ export function createClient(config: ClientConfig) {
         const query = new URLSearchParams({ path: params.path ?? "." })
         return request<FileEntry[]>(config, `/file?${query.toString()}`)
       },
+      content: (path: string) => {
+        const query = new URLSearchParams({ path })
+        return request<{ type: "text" | "binary"; content: string }>(
+          config,
+          `/file/content?${query.toString()}`,
+        )
+      },
+      findText: (pattern: string) => {
+        const query = new URLSearchParams({ pattern })
+        return request<
+          Array<{ path: { text: string }; lines: { text: string }; line_number: number }>
+        >(config, `/find?${query.toString()}`)
+      },
+      findFile: (queryStr: string) => {
+        const query = new URLSearchParams({ query: queryStr })
+        return request<string[]>(config, `/find/file?${query.toString()}`)
+      },
       // Enumerate the server's filesystem roots (mounted drives, home dir)
       // to seed the directory browser's pinned top-level entries. Resolves
       // to null on servers that don't yet expose GET /file/roots (older

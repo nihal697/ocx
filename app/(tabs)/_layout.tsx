@@ -38,6 +38,13 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
+        name="files"
+        options={{
+          title: t("nav.filesTab"),
+          tabBarIcon: ({ color, size }) => <Ionicons name="folder-outline" size={size} color={color} />,
+        }}
+      />
+      <Tabs.Screen
         name="settings"
         options={{
           title: t("nav.settingsTab"),

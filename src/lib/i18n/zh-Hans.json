@@ -14,7 +14,19 @@
       "security": "安全",
       "notifications": "通知",
       "privacy": "隐私",
+      "models": "模型供应商",
       "about": "关于"
+    },
+    "models": {
+      "noConnection": "请先连接服务器以管理模型供应商。",
+      "loading": "正在加载供应商...",
+      "empty": "此服务器上未找到供应商。",
+      "connected": "已连接",
+      "tapToConnect": "轻触以连接",
+      "noBrowserTitle": "无登录页面",
+      "noBrowserMessage": "该供应商需要在服务器上粘贴密钥。",
+      "authFailedTitle": "连接失败",
+      "authFailedMessage": "无法启动供应商登录。请检查连接后重试。"
     },
     "security": {
       "biometricOpen": {
@@ -75,6 +87,9 @@
   },
   "session": {
     "titleFallback": "会话",
+    "slash": {
+      "skillFallback": "技能"
+    },
     "rename": {
       "title": "重命名会话",
       "failedTitle": "重命名失败",
@@ -133,6 +148,8 @@
       "deleteMessageFailedMessage": "无法删除该消息。请检查连接后重试。",
       "commandFailedTitle": "命令执行失败",
       "commandFailedMessage": "无法执行该命令。请检查连接后重试。",
+      "shellUsageTitle": "用法：/shell <命令>",
+      "shellUsageMessage": "在 /shell 后输入 shell 命令，例如 /shell git status。",
       "replyFailedTitle": "回复失败",
       "replyFailedMessage": "无法发送您的回复。请重试。",
       "rejectFailedTitle": "拒绝失败",
@@ -234,9 +251,29 @@
   "nav": {
     "sessionsTab": "会话",
     "connectionsTab": "连接",
+    "filesTab": "文件",
     "settingsTab": "设置",
     "addConnectionTitle": "添加连接",
     "editConnectionTitle": "编辑连接"
+  },
+  "files": {
+    "noConnection": "请先连接服务器，然后在此浏览文件。",
+    "browseFailed": "无法列出文件。请检查连接。",
+    "readFailedTitle": "无法打开文件",
+    "readFailedMessage": "该文件无法读取。请检查连接后重试。",
+    "binaryTitle": "二进制文件",
+    "binaryMessage": "该文件不是可读文本。",
+    "truncated": "仅显示前 200,000 个字符。",
+    "emptyDir": "空文件夹",
+    "searchPlaceholder": "搜索代码...",
+    "noMatches": "无匹配结果",
+    "initGitTitle": "初始化 git 仓库？",
+    "initGitMessage": "在当前项目中创建 git 仓库。",
+    "initGitConfirm": "初始化",
+    "initGitDoneTitle": "完成",
+    "initGitDoneMessage": "Git 仓库已创建。",
+    "initGitFailedTitle": "失败",
+    "initGitFailedMessage": "无法初始化 git。请检查连接后重试。"
   },
   "connectionsList": {
     "activeBadge": "当前使用",

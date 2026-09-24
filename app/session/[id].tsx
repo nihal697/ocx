@@ -67,6 +67,13 @@ const BUILTIN_COMMANDS: SlashCommand[] = [
     icon: "person-outline",
     type: "builtin",
   },
+  {
+    trigger: "shell",
+    title: "Shell command",
+    description: "Run a one-off shell command (usage: /shell <command>)",
+    icon: "terminal-outline",
+    type: "builtin",
+  },
 ]
 
 function getShortDir(dir?: string): string | null {
@@ -158,6 +165,23 @@ export default function SessionScreen() {
   const loadCatalog = useCatalog((s) => s.load)
   const agents = Array.isArray(catalog.agents) ? catalog.agents : []
   const serverCommands = Array.isArray(catalog.commands) ? catalog.commands : []
+  const [skills, setSkills] = useState<Array<{ name: string; description?: string }>>([])
+
+  // Instance skills for the slash list. Best effort: older servers lack the
+  // route and sessions work fine without it.
+  useEffect(() => {
+    if (!sessionClient) return
+    let cancelled = false
+    sessionClient.instance
+      .skill()
+      .then((list) => {
+        if (!cancelled && Array.isArray(list)) setSkills(list)
+      })
+      .catch(() => {})
+    return () => {
+      cancelled = true
+    }
+  }, [sessionClient])
   const providers = Array.isArray(catalog.providers) ? catalog.providers : []
   const agent = catalog.agent || ""
   const model = catalog.model
@@ -255,8 +279,19 @@ export default function SessionScreen() {
       icon: "code-slash-outline",
       type: "custom",
     }))
-    return [...custom, ...BUILTIN_COMMANDS]
-  }, [serverCommands])
+    // Instance skills ride along as slash entries: picking one inserts
+    // /<name> into the composer. The server has no run-skill route, so an
+    // unmatched /<name> falls through to a normal prompt mentioning it,
+    // which is exactly how agents pick skills up.
+    const skillEntries: SlashCommand[] = skills.map((s) => ({
+      trigger: s.name,
+      title: s.name,
+      description: s.description || t("session.slash.skillFallback"),
+      icon: "sparkles-outline",
+      type: "custom",
+    }))
+    return [...custom, ...skillEntries, ...BUILTIN_COMMANDS]
+  }, [serverCommands, skills, t])
 
   // While a revert is pending, the reverted message and everything after it
   // still exist server-side (cleanup only runs on the next prompt/unrevert)
@@ -624,6 +659,24 @@ export default function SessionScreen() {
 
     const text = input.trim()
     const files = [...attachments]
+
+    // /shell one-offs run outside the agent turn (no attachments).
+    if (text.startsWith("/shell ") && files.length === 0 && sessionClient && currentSession) {
+      const command = text.slice("/shell ".length).trim()
+      if (!command) {
+        Alert.alert(t("session.alerts.shellUsageTitle"), t("session.alerts.shellUsageMessage"))
+        return
+      }
+      try {
+        await sessionClient.session.shell(currentSession.id, { command, agent })
+      } catch (err) {
+        console.error("Shell failed:", err)
+        Alert.alert(t("session.alerts.commandFailedTitle"), t("session.alerts.commandFailedMessage"))
+        return
+      }
+      setInput("")
+      return
+    }
 
     // Server slash commands (no attachments for commands). Runs BEFORE the
     // input is cleared: a failed command must leave the typed text intact so
