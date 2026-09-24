@@ -146,6 +146,11 @@
       "deleteMessageMessage": "这将从会话中移除该消息。",
       "deleteMessageFailedTitle": "删除失败",
       "deleteMessageFailedMessage": "无法删除该消息。请检查连接后重试。",
+      "backgroundTitle": "后台运行",
+      "backgroundDone": "正在运行的任务已移至后台，离开后将继续执行。",
+      "backgroundNothing": "无需后台化：没有正在运行的任务，或服务器不支持。",
+      "backgroundFailedTitle": "失败",
+      "backgroundFailedMessage": "无法将该会话移至后台。请检查连接后重试。",
       "commandFailedTitle": "命令执行失败",
       "commandFailedMessage": "无法执行该命令。请检查连接后重试。",
       "shellUsageTitle": "用法：/shell <命令>",
@@ -305,7 +310,8 @@
     "filesCount": "{{count}} 个文件",
     "actions": {
       "rename": "重命名",
-      "archive": "归档"
+      "archive": "归档",
+      "takeOver": "接管"
     },
     "alerts": {
       "renameFailedTitle": "重命名失败",
@@ -318,6 +324,10 @@
       "archiveMessage": "归档 \"{{title}}\"？它将从列表中消失。",
       "archiveFailedTitle": "归档失败",
       "archiveFailedMessage": "无法归档该会话。请重试。",
+      "takeOverTitle": "接管会话？",
+      "takeOverMessage": "将 \"{{title}}\" 移入此工作区？在别处使用它的客户端将失去该会话。",
+      "takeOverFailedTitle": "接管失败",
+      "takeOverFailedMessage": "无法移动该会话。请检查连接后重试。",
       "createFailedMessage": "创建会话失败。请检查网络连接后重试。"
     },
     "empty": {
@@ -474,6 +484,7 @@
       "todos": "智能体待办",
       "forks": "分支会话",
       "untitledFork": "未命名分支",
+      "background": "后台运行",
       "pills": {
         "in": "输入",
         "out": "输出",
@@ -496,6 +507,23 @@
         "daysAgo": "{{count}} 天前"
       }
     }
+  },
+  "terminal": {
+    "title": "终端",
+    "noConnection": "请先连接服务器，然后在此打开终端。",
+    "sessions": "终端会话",
+    "new": "新建",
+    "empty": "暂无终端会话。新建一个以在服务器上运行命令。",
+    "waiting": "连接中...",
+    "inputPlaceholder": "输入命令...",
+    "disconnected": "已断开",
+    "connectFailedTitle": "连接失败",
+    "connectFailedMessage": "无法连接到终端。请检查连接后重试。",
+    "createFailedTitle": "失败",
+    "createFailedMessage": "无法启动终端。请检查连接后重试。",
+    "killTitle": "终止终端？",
+    "killMessage": "Shell 进程将被停止。",
+    "killConfirm": "终止"
   },
   "demo": {
     "title": "演示",

@@ -192,6 +192,7 @@ export default function SessionScreen() {
 
   const [summarizing, setSummarizing] = useState(false)
   const [forking, setForking] = useState(false)
+  const [backgrounding, setBackgrounding] = useState(false)
 
   const handleSummarize = useCallback(async () => {
     if (summarizing || !currentSession) return
@@ -231,6 +232,26 @@ export default function SessionScreen() {
       setForking(false)
     }
   }, [forking, currentSession, forkSession, t])
+
+  // Promote running subagent tasks to background jobs so they survive
+  // leaving the session. Server-gated (experimental flag): false means
+  // either nothing was running or the server doesn't allow it.
+  const handleBackground = useCallback(async () => {
+    if (backgrounding || !currentSession || !sessionClient) return
+    setBackgrounding(true)
+    try {
+      const promoted = await sessionClient.experimental.sessionBackground(currentSession.id)
+      Alert.alert(
+        t("session.alerts.backgroundTitle"),
+        promoted ? t("session.alerts.backgroundDone") : t("session.alerts.backgroundNothing"),
+      )
+    } catch (err) {
+      console.error("Background failed:", err)
+      Alert.alert(t("session.alerts.backgroundFailedTitle"), t("session.alerts.backgroundFailedMessage"))
+    } finally {
+      setBackgrounding(false)
+    }
+  }, [backgrounding, currentSession, sessionClient, t])
 
   // Permission & question state
   const sessionID = currentSession?.id
@@ -959,6 +980,8 @@ export default function SessionScreen() {
           summarizing={summarizing}
           onFork={() => void handleFork()}
           forking={forking}
+          onBackground={() => void handleBackground()}
+          backgrounding={backgrounding}
         />
 
         {/* SSE reconnect/connected banner */}

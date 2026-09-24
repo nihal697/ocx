@@ -146,6 +146,11 @@
       "deleteMessageMessage": "This removes the message from the session.",
       "deleteMessageFailedTitle": "Delete failed",
       "deleteMessageFailedMessage": "Could not delete the message. Check your connection and try again.",
+      "backgroundTitle": "Run in background",
+      "backgroundDone": "Running tasks were moved to the background. They keep going after you leave.",
+      "backgroundNothing": "Nothing to background: no running tasks, or the server doesn't allow it.",
+      "backgroundFailedTitle": "Failed",
+      "backgroundFailedMessage": "Could not background this session. Check your connection and try again.",
       "commandFailedTitle": "Command failed",
       "commandFailedMessage": "Could not run that command. Check your connection and try again.",
       "shellUsageTitle": "Usage: /shell <command>",
@@ -305,7 +310,8 @@
     "filesCount": "{{count}} files",
     "actions": {
       "rename": "Rename",
-      "archive": "Archive"
+      "archive": "Archive",
+      "takeOver": "Take over"
     },
     "alerts": {
       "renameFailedTitle": "Rename failed",
@@ -318,6 +324,10 @@
       "archiveMessage": "Archive \"{{title}}\"? It will disappear from the list.",
       "archiveFailedTitle": "Archive failed",
       "archiveFailedMessage": "Could not archive the session. Please try again.",
+      "takeOverTitle": "Take over session?",
+      "takeOverMessage": "Move \"{{title}}\" into this workspace? Other clients using it elsewhere will lose it.",
+      "takeOverFailedTitle": "Take over failed",
+      "takeOverFailedMessage": "Could not move the session. Check your connection and try again.",
       "createFailedMessage": "Failed to create session. Check your connection and try again."
     },
     "empty": {
@@ -474,6 +484,7 @@
       "todos": "Agent todos",
       "forks": "Forks",
       "untitledFork": "Untitled fork",
+      "background": "Background",
       "pills": {
         "in": "In",
         "out": "Out",
@@ -496,6 +507,23 @@
         "daysAgo": "{{count}}d ago"
       }
     }
+  },
+  "terminal": {
+    "title": "Terminal",
+    "noConnection": "Connect to a server first, then open a terminal here.",
+    "sessions": "Terminal sessions",
+    "new": "New",
+    "empty": "No terminal sessions. Start one to run commands on your server.",
+    "waiting": "Connecting...",
+    "inputPlaceholder": "Type a command...",
+    "disconnected": "Disconnected",
+    "connectFailedTitle": "Connection failed",
+    "connectFailedMessage": "Could not attach to the terminal. Check your connection and try again.",
+    "createFailedTitle": "Failed",
+    "createFailedMessage": "Could not start a terminal. Check your connection and try again.",
+    "killTitle": "Kill terminal?",
+    "killMessage": "The shell process will be stopped.",
+    "killConfirm": "Kill"
   },
   "demo": {
     "title": "Demo",

@@ -51,12 +51,14 @@ function SessionItem({
   isDark,
   onRename,
   onArchive,
+  onTakeOver,
   onDelete,
 }: {
   session: Session
   isDark: boolean
   onRename: () => void
   onArchive: () => void
+  onTakeOver: () => void
   onDelete: () => void
 }) {
   const { t } = useTranslation()
@@ -79,6 +81,7 @@ function SessionItem({
       { text: t("common.cancel"), style: "cancel" },
       { text: t("sessionsList.actions.rename"), onPress: onRename },
       { text: t("sessionsList.actions.archive"), onPress: onArchive },
+      { text: t("sessionsList.actions.takeOver"), onPress: onTakeOver },
       { text: t("common.delete"), style: "destructive", onPress: onDelete },
     ])
   }
@@ -374,7 +377,38 @@ export default function SessionsScreen() {
     [archiveSession, t],
   )
 
-  const handleDelete = useCallback(    (session: Session) => {
+  // Move a session from another workspace/client into this one ("steal").
+  // Same-directory setups make this a harmless no-op; cross-workspace moves
+  // take it away from the other client, so always confirm first.
+  const handleTakeOver = useCallback(
+    (session: Session) => {
+      Alert.alert(
+        t("sessionsList.alerts.takeOverTitle"),
+        t("sessionsList.alerts.takeOverMessage", { title: session.title || t("sessionsList.untitledSession") }),
+        [
+          { text: t("common.cancel"), style: "cancel" },
+          {
+            text: t("sessionsList.actions.takeOver"),
+            onPress: async () => {
+              const c = session.directory ? (clientForDirectory(session.directory) ?? client) : client
+              if (!c) return
+              try {
+                await c.sync.steal(session.id)
+                loadSessions()
+              } catch (err) {
+                console.error("Take over failed:", err)
+                Alert.alert(t("sessionsList.alerts.takeOverFailedTitle"), t("sessionsList.alerts.takeOverFailedMessage"))
+              }
+            },
+          },
+        ],
+      )
+    },
+    [client, clientForDirectory, loadSessions, t],
+  )
+
+  const handleDelete = useCallback(
+    (session: Session) => {
       Alert.alert(
         t("sessionsList.alerts.deleteTitle"),
         t("sessionsList.alerts.deleteMessage", { title: session.title || t("sessionsList.untitledSession") }),
@@ -661,6 +695,7 @@ export default function SessionsScreen() {
               isDark={isDark}
               onRename={() => handleRename(row.session)}
               onArchive={() => handleArchive(row.session)}
+              onTakeOver={() => handleTakeOver(row.session)}
               onDelete={() => handleDelete(row.session)}
             />
           )

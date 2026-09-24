@@ -1,3 +1,3 @@
-v0.4.21 — Files tab, /shell, provider login
+v0.4.22 — Terminal, background tasks, take over
 
-Browse and search server files in the new Files tab. Run /shell commands, pick skills from slash, connect model providers from Settings.
+Real terminal shells on your server from the Files tab. Background running tasks from session info. Take over sessions via long-press.

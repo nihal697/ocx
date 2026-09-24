@@ -13,6 +13,7 @@ import {
   RefreshControl,
 } from "react-native"
 import { Ionicons } from "@expo/vector-icons"
+import { router } from "expo-router"
 import { useTranslation } from "react-i18next"
 import { useConnections } from "../../src/stores/connections"
 import type { FileEntry } from "../../src/lib/sdk"
@@ -247,6 +248,9 @@ export default function FilesScreen() {
         </View>
         <TouchableOpacity style={styles.iconBtn} onPress={handleInitGit} hitSlop={8} testID="files-init-git">
           <Ionicons name="git-branch-outline" size={20} color={isDark ? "#888888" : "#666666"} />
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.iconBtn} onPress={() => router.push("/terminal")} hitSlop={8} testID="files-terminal">
+          <Ionicons name="terminal-outline" size={20} color={isDark ? "#888888" : "#666666"} />
         </TouchableOpacity>
       </View>
 

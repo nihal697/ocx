@@ -22,6 +22,8 @@ interface Props {
   summarizing: boolean
   onFork: () => void
   forking: boolean
+  onBackground: () => void
+  backgrounding: boolean
 }
 
 function compact(n: number): string {
@@ -61,6 +63,8 @@ export function SessionInfo({
   summarizing,
   onFork,
   forking,
+  onBackground,
+  backgrounding,
 }: Props) {
   const { t } = useTranslation()
   const client = useConnections((s) => s.client)
@@ -264,6 +268,19 @@ export function SessionInfo({
             <Ionicons name="git-branch-outline" size={14} color={isDark ? "#888888" : "#666666"} />
           )}
           <Text style={[s.actionText, isDark && s.dimDark]}>{t("chat.sessionInfo.fork")}</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[s.action, isDark && s.actionDark]}
+          onPress={onBackground}
+          disabled={backgrounding}
+          testID="session-background-button"
+        >
+          {backgrounding ? (
+            <ActivityIndicator size="small" color={isDark ? "#888888" : "#666666"} />
+          ) : (
+            <Ionicons name="cloud-upload-outline" size={14} color={isDark ? "#888888" : "#666666"} />
+          )}
+          <Text style={[s.actionText, isDark && s.dimDark]}>{t("chat.sessionInfo.background")}</Text>
         </TouchableOpacity>
       </View>
 

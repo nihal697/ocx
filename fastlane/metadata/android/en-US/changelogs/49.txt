@@ -1,0 +1,5 @@
+v0.4.22 — Terminal, background tasks, take over sessions
+
+• New Terminal (from the Files tab): open real shells on your server, with reconnect and kill.
+• Session info panel: move running subagent tasks to the background so they survive leaving.
+• Long-press a session to Take over (move it into this workspace), with confirm.

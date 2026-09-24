@@ -530,6 +530,58 @@ export function createClient(config: ClientConfig) {
         ),
     },
 
+    pty: {
+      list: () =>
+        request<
+          Array<{
+            id: string
+            title: string
+            command: string
+            args: string[]
+            cwd: string
+            status: "running" | "exited"
+            pid: number
+            exitCode?: number
+          }>
+        >(config, "/pty"),
+      create: (params?: { command?: string; args?: string[]; cwd?: string; title?: string }) =>
+        request<{
+          id: string
+          title: string
+          command: string
+          args: string[]
+          cwd: string
+          status: "running" | "exited"
+          pid: number
+          exitCode?: number
+        }>(config, "/pty", { method: "POST", body: JSON.stringify(params ?? {}) }),
+      remove: (ptyID: string) => request<boolean>(config, `/pty/${ptyID}`, { method: "DELETE" }),
+      connectToken: (ptyID: string) =>
+        request<string>(config, `/pty/${ptyID}/connect-token`, { method: "POST" }),
+      // WebSocket URL for live I/O. Auth rides the short-lived ticket (RN
+      // WebSocket can't set headers reliably) — see PtyProtocol: outbound
+      // frames are raw UTF-8 terminal chunks; one 0x00+JSON control frame
+      // carries the absolute output cursor for resume.
+      connectUrl: (ptyID: string, ticket: string, cursor = -1) => {
+        const ws = config.baseUrl.replace(/^http/, "ws")
+        const dir = config.directory ? `&directory=${encodeURIComponent(config.directory)}` : ""
+        return `${ws}/pty/${ptyID}/connect?ticket=${encodeURIComponent(ticket)}&cursor=${cursor}${dir}`
+      },
+    },
+
+    experimental: {
+      sessionBackground: (sessionID: string) =>
+        request<boolean>(config, `/experimental/session/${sessionID}/background`, { method: "POST" }),
+    },
+
+    sync: {
+      steal: (sessionID: string) =>
+        request<{ sessionID: string }>(config, "/sync/steal", {
+          method: "POST",
+          body: JSON.stringify({ sessionID }),
+        }),
+    },
+
     permission: {
       list: () =>
         request<Array<{ id: string; sessionID: string; tool: string; input: unknown }>>(config, "/permission"),
