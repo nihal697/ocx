@@ -19,10 +19,15 @@ react {
     // works correctly with Expo projects.
     cliFile = new File(["node", "--print", "require.resolve('@expo/cli', { paths: [require.resolve('expo/package.json')] })"].execute(null, rootDir).text.trim())
     bundleCommand = "export:embed"
-    // CI emulator harnesses (activation-e2e.yml) install a debug APK but run
-    // no Metro dev server, so the debug variant must embed the JS bundle
-    // instead of expecting a hot-reload server at 10.0.2.2:8081.
-    bundleInDebug = true
+    // CI emulator harnesses (activation-e2e.yml, cua-smoke.yml) install a
+    // debug APK but run no Metro dev server, so they build with
+    // -PembedDebugBundle=true to embed the JS bundle. With an empty
+    // debuggableVariants list the RN plugin bundles every variant; the default
+    // treats 'debug' as dev-only and skips bundling (Metro is then required).
+    // Local `expo run:android` development keeps the default and hot reload.
+    if (findProperty('embedDebugBundle') == 'true') {
+        debuggableVariants = []
+    }
 
     /* Folders */
      //   The root of your project, i.e. where "package.json" lives. Default is '../..'

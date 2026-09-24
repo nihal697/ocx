@@ -116,7 +116,7 @@ jobs:
           keytool -genkey -v -keystore android/app/debug.keystore -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
           # Emulator is x86_64: build a universal DEBUG apk (buildAbiSplits=false
           # includes x86_64 libs) — the per-arch release APKs can't install on it.
-          cd android && ./gradlew assembleDebug -PbuildAbiSplits=false
+          cd android && ./gradlew assembleDebug -PbuildAbiSplits=false -PembedDebugBundle=true
 
       - name: Install Python deps
         run: pip install openai
