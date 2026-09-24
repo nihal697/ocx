@@ -1,0 +1,5 @@
+v0.4.20 — Attach any file + summarize, fork, todos, delete message
+
+• The + button now offers Photos, Camera, or Files — attach PDFs, text, code, anything under 10 MB.
+• Session info panel: Summarize the session to free context, Fork it into a copy, and see the agent's live todo list.
+• Long-press your message for Fork from here or Delete, alongside Edit.

@@ -101,7 +101,9 @@
     },
     "actions": {
       "editMessage": "Edit message",
-      "replace": "Replace"
+      "replace": "Replace",
+      "forkHere": "Fork from here",
+      "deleteMessage": "Delete message"
     },
     "alerts": {
       "messageActionsTitle": "Message actions",
@@ -121,6 +123,14 @@
       "authRequiredMessage": "Biometric authentication is required to send. Please try again.",
       "sendFailedTitle": "Message not sent",
       "sendFailedMessage": "Could not send your message. Check your connection and try again.",
+      "summarizeFailedTitle": "Summarize failed",
+      "summarizeFailedMessage": "Could not summarize this session. Check your connection and try again.",
+      "forkFailedTitle": "Fork failed",
+      "forkFailedMessage": "Could not fork this session. Check your connection and try again.",
+      "deleteMessageTitle": "Delete message?",
+      "deleteMessageMessage": "This removes the message from the session.",
+      "deleteMessageFailedTitle": "Delete failed",
+      "deleteMessageFailedMessage": "Could not delete the message. Check your connection and try again.",
       "commandFailedTitle": "Command failed",
       "commandFailedMessage": "Could not run that command. Check your connection and try again.",
       "replyFailedTitle": "Reply Failed",
@@ -129,8 +139,16 @@
       "rejectFailedMessage": "Could not send your response. Please try again.",
       "imageFailedTitle": "Image not attached",
       "imageFailedMessage": "One or more images could not be processed. Please try a different photo.",
+      "fileTooLargeTitle": "File too large",
+      "fileTooLargeMessage": "Files must be under 10 MB. That file was skipped.",
       "speechErrorTitle": "Voice input failed",
       "speechErrorMessage": "Could not use voice input. Check your microphone permission and try again."
+    },
+    "attach": {
+      "menuTitle": "Add attachment",
+      "photos": "Photos",
+      "camera": "Camera",
+      "files": "Files"
     }
   },
   "connection": {
@@ -414,6 +432,9 @@
       "loading": "Loading...",
       "loadAllMessages": "Load all messages",
       "jumpToBeginning": "Jump to beginning",
+      "summarize": "Summarize",
+      "fork": "Fork",
+      "todos": "Agent todos",
       "pills": {
         "in": "In",
         "out": "Out",

@@ -101,7 +101,9 @@
     },
     "actions": {
       "editMessage": "编辑消息",
-      "replace": "替换"
+      "replace": "替换",
+      "forkHere": "从此处分支",
+      "deleteMessage": "删除消息"
     },
     "alerts": {
       "messageActionsTitle": "消息操作",
@@ -121,6 +123,14 @@
       "authRequiredMessage": "发送消息需要生物识别验证。请重试。",
       "sendFailedTitle": "消息未发送",
       "sendFailedMessage": "无法发送您的消息。请检查连接后重试。",
+      "summarizeFailedTitle": "总结失败",
+      "summarizeFailedMessage": "无法总结该会话。请检查连接后重试。",
+      "forkFailedTitle": "分支失败",
+      "forkFailedMessage": "无法分支该会话。请检查连接后重试。",
+      "deleteMessageTitle": "删除消息？",
+      "deleteMessageMessage": "这将从会话中移除该消息。",
+      "deleteMessageFailedTitle": "删除失败",
+      "deleteMessageFailedMessage": "无法删除该消息。请检查连接后重试。",
       "commandFailedTitle": "命令执行失败",
       "commandFailedMessage": "无法执行该命令。请检查连接后重试。",
       "replyFailedTitle": "回复失败",
@@ -129,8 +139,16 @@
       "rejectFailedMessage": "无法发送您的回复。请重试。",
       "imageFailedTitle": "图片未添加",
       "imageFailedMessage": "一张或多张图片无法处理。请尝试其他照片。",
+      "fileTooLargeTitle": "文件过大",
+      "fileTooLargeMessage": "文件须小于 10 MB。该文件已跳过。",
       "speechErrorTitle": "语音输入失败",
       "speechErrorMessage": "无法使用语音输入。请检查麦克风权限后重试。"
+    },
+    "attach": {
+      "menuTitle": "添加附件",
+      "photos": "照片",
+      "camera": "相机",
+      "files": "文件"
     }
   },
   "connection": {
@@ -414,6 +432,9 @@
       "loading": "加载中...",
       "loadAllMessages": "加载全部消息",
       "jumpToBeginning": "跳转到开头",
+      "summarize": "总结",
+      "fork": "分支",
+      "todos": "智能体待办",
       "pills": {
         "in": "输入",
         "out": "输出",

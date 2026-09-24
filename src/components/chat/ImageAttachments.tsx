@@ -22,19 +22,26 @@ export function ImageAttachments({ attachments, isDark, onRemove }: Props) {
   return (
     <View style={[s.container, isDark && s.containerDark]}>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={s.scroll}>
-        {attachments.map((att, idx) => (
-          <View key={`${att.uri}-${idx}`} style={s.thumb}>
-            <Image source={{ uri: att.uri }} style={s.image} resizeMode="cover" />
-            <TouchableOpacity style={[s.remove, isDark && s.removeDark]} onPress={() => onRemove(idx)}>
-              <Ionicons name="close" size={14} color="#ffffff" />
-            </TouchableOpacity>
-            {att.filename && (
+        {attachments.map((att, idx) => {
+          const isImage = att.mime.startsWith("image/")
+          return (
+            <View key={`${att.uri}-${idx}`} style={s.thumb}>
+              {isImage ? (
+                <Image source={{ uri: att.uri }} style={s.image} resizeMode="cover" />
+              ) : (
+                <View style={[s.image, s.fileTile, isDark && s.fileTileDark]}>
+                  <Ionicons name="document-text-outline" size={28} color={isDark ? "#888888" : "#666666"} />
+                </View>
+              )}
+              <TouchableOpacity style={[s.remove, isDark && s.removeDark]} onPress={() => onRemove(idx)}>
+                <Ionicons name="close" size={14} color="#ffffff" />
+              </TouchableOpacity>
               <Text style={[s.label, isDark && s.labelDark]} numberOfLines={1}>
-                {att.filename}
+                {att.filename || att.mime}
               </Text>
-            )}
-          </View>
-        ))}
+            </View>
+          )
+        })}
       </ScrollView>
     </View>
   )
@@ -57,6 +64,8 @@ const s = StyleSheet.create({
     borderRadius: 8,
     backgroundColor: "#f0f0f0",
   },
+  fileTile: { justifyContent: "center", alignItems: "center" },
+  fileTileDark: { backgroundColor: "#1a1a1a" },
   remove: {
     position: "absolute",
     top: -6,

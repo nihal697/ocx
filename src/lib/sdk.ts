@@ -49,6 +49,12 @@ export interface Session {
   }
 }
 
+export interface Todo {
+  content: string
+  status: "pending" | "in_progress" | "completed" | "cancelled" | string
+  priority: "high" | "medium" | "low" | string
+}
+
 export interface Message {
   id: string
   sessionID: string
@@ -471,6 +477,23 @@ export function createClient(config: ClientConfig) {
         request<Session>(config, `/session/${sessionID}/unrevert`, {
           method: "POST",
         }),
+
+      summarize: (sessionID: string, params: { providerID: string; modelID: string } | { auto: true }) =>
+        request<boolean>(config, `/session/${sessionID}/summarize`, {
+          method: "POST",
+          body: JSON.stringify(params),
+        }),
+
+      fork: (sessionID: string, messageID?: string) =>
+        request<Session>(config, `/session/${sessionID}/fork`, {
+          method: "POST",
+          body: JSON.stringify(messageID ? { messageID } : {}),
+        }),
+
+      todo: (sessionID: string) => request<Todo[]>(config, `/session/${sessionID}/todo`),
+
+      deleteMessage: (sessionID: string, messageID: string) =>
+        request<void>(config, `/session/${sessionID}/message/${messageID}`, { method: "DELETE" }),
     },
 
     permission: {

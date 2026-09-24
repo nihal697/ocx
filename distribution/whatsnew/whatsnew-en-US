@@ -1,3 +1,3 @@
-v0.4.19 — Rename sessions, auto-naming, search, swipe actions
+v0.4.20 — Attach any file, summarize, fork, todos
 
-Tap the chat title to rename a session. New sessions title themselves from your first message. Plus session search and swipe for Rename, Archive, Delete.
+Attach PDFs and any files from the + button. Summarize or fork sessions from the info panel, see agent todos, delete messages via long-press.

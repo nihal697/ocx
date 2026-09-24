@@ -57,6 +57,9 @@ interface SessionsState {
   deleteSession: (sessionID: string) => Promise<void>
   renameSession: (sessionID: string, title: string) => Promise<boolean>
   archiveSession: (sessionID: string, archived?: boolean) => Promise<boolean>
+  summarizeSession: (model?: { providerID: string; modelID: string }) => Promise<boolean>
+  forkSession: (messageID?: string) => Promise<Session | null>
+  deleteSessionMessage: (messageID: string) => Promise<boolean>
   sendMessage: (
     text: string,
     model?: { providerID: string; modelID: string },
@@ -323,6 +326,61 @@ export const useSessions = create<SessionsState>((set, get) => ({
       return true
     } catch (error) {
       set({ error: "Failed to archive session" })
+      return false
+    }
+  },
+
+  summarizeSession: async (model) => {
+    const client = clientFor(get().currentSession?.directory)
+    const session = get().currentSession
+    if (!client || !session) {
+      set({ error: "No active session" })
+      return false
+    }
+
+    try {
+      // auto:true lets the server pick the model when the client has none.
+      await client.session.summarize(session.id, model ?? { auto: true })
+      await get().refreshMessages()
+      return true
+    } catch (error) {
+      set({ error: "Failed to summarize session" })
+      return false
+    }
+  },
+
+  forkSession: async (messageID) => {
+    const client = clientFor(get().currentSession?.directory)
+    const session = get().currentSession
+    if (!client || !session) {
+      set({ error: "No active session" })
+      return null
+    }
+
+    try {
+      const forked = await client.session.fork(session.id, messageID)
+      await get().loadSessions()
+      return forked
+    } catch (error) {
+      set({ error: "Failed to fork session" })
+      return null
+    }
+  },
+
+  deleteSessionMessage: async (messageID) => {
+    const client = clientFor(get().currentSession?.directory)
+    const session = get().currentSession
+    if (!client || !session) {
+      set({ error: "No active session" })
+      return false
+    }
+
+    try {
+      await client.session.deleteMessage(session.id, messageID)
+      await get().refreshMessages()
+      return true
+    } catch (error) {
+      set({ error: "Failed to delete message" })
       return false
     }
   },

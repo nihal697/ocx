@@ -19,6 +19,8 @@ import { useSafeAreaInsets } from "react-native-safe-area-context"
 import { useTranslation } from "react-i18next"
 import * as ImagePicker from "expo-image-picker"
 import * as ImageManipulator from "expo-image-manipulator"
+import * as DocumentPicker from "expo-document-picker"
+import * as FileSystem from "expo-file-system"
 import * as Clipboard from "expo-clipboard"
 import type BottomSheet from "@gorhom/bottom-sheet"
 import {
@@ -103,6 +105,8 @@ export default function SessionScreen() {
     revertToMessage,
     unrevertSession,
     renameSession,
+    summarizeSession,
+    forkSession,
     error: sessionError,
   } = useSessions()
 
@@ -161,6 +165,48 @@ export default function SessionScreen() {
   const variant = catalog.variant
   const setVariant = (variant: string | null) => useCatalog.getState().setVariant(sessionDirectory, variant)
   const cycleAgent = (direction?: 1 | -1) => useCatalog.getState().cycleAgent(sessionDirectory, direction)
+
+  const [summarizing, setSummarizing] = useState(false)
+  const [forking, setForking] = useState(false)
+
+  const handleSummarize = useCallback(async () => {
+    if (summarizing || !currentSession) return
+    setSummarizing(true)
+    try {
+      const ok = await summarizeSession(
+        model ? { providerID: model.providerID, modelID: model.modelID } : undefined,
+      )
+      if (!ok) {
+        Alert.alert(t("session.alerts.summarizeFailedTitle"), t("session.alerts.summarizeFailedMessage"))
+      }
+    } catch (err) {
+      console.error("Summarize failed:", err)
+      Alert.alert(t("session.alerts.summarizeFailedTitle"), t("session.alerts.summarizeFailedMessage"))
+    } finally {
+      setSummarizing(false)
+    }
+  }, [summarizing, currentSession, summarizeSession, model, t])
+
+  const handleFork = useCallback(async () => {
+    if (forking || !currentSession) return
+    setForking(true)
+    try {
+      const forked = await forkSession()
+      if (forked) {
+        router.push({
+          pathname: `/session/[id]`,
+          params: { id: forked.id, ...(forked.directory ? { directory: forked.directory } : {}) },
+        })
+      } else {
+        Alert.alert(t("session.alerts.forkFailedTitle"), t("session.alerts.forkFailedMessage"))
+      }
+    } catch (err) {
+      console.error("Fork failed:", err)
+      Alert.alert(t("session.alerts.forkFailedTitle"), t("session.alerts.forkFailedMessage"))
+    } finally {
+      setForking(false)
+    }
+  }, [forking, currentSession, forkSession, t])
 
   // Permission & question state
   const sessionID = currentSession?.id
@@ -270,8 +316,7 @@ export default function SessionScreen() {
       { text: t("common.cancel"), style: "cancel" },
       {
         text: t("session.actions.editMessage"),
-        onPress: () => {
-          const doRevert = async () => {
+        onPress: () => {          const doRevert = async () => {
             const result = await useSessions.getState().revertToMessage(messageID)
             applyRevertResult(result)
           }
@@ -290,6 +335,49 @@ export default function SessionScreen() {
             return
           }
           doRevert()
+        },
+      },
+      {
+        text: t("session.actions.forkHere"),
+        onPress: () => {
+          const doFork = async () => {
+            const forked = await useSessions.getState().forkSession(messageID)
+            if (forked) {
+              router.push({
+                pathname: `/session/[id]`,
+                params: { id: forked.id, ...(forked.directory ? { directory: forked.directory } : {}) },
+              })
+            } else {
+              Alert.alert(t("session.alerts.forkFailedTitle"), t("session.alerts.forkFailedMessage"))
+            }
+          }
+          void doFork()
+        },
+      },
+      {
+        text: t("session.actions.deleteMessage"),
+        style: "destructive",
+        onPress: () => {
+          Alert.alert(
+            t("session.alerts.deleteMessageTitle"),
+            t("session.alerts.deleteMessageMessage"),
+            [
+              { text: t("common.cancel"), style: "cancel" },
+              {
+                text: t("common.delete"),
+                style: "destructive",
+                onPress: () => {
+                  const doDelete = async () => {
+                    const ok = await useSessions.getState().deleteSessionMessage(messageID)
+                    if (!ok) {
+                      Alert.alert(t("session.alerts.deleteMessageFailedTitle"), t("session.alerts.deleteMessageFailedMessage"))
+                    }
+                  }
+                  void doDelete()
+                },
+              },
+            ],
+          )
         },
       },
     ])
@@ -449,6 +537,53 @@ export default function SessionScreen() {
       Alert.alert(t("session.alerts.imageFailedTitle"), t("session.alerts.imageFailedMessage"))
     }
   }, [t])
+
+  // Max per file: base64 inflates ~33% in memory and in the request body.
+  const MAX_FILE_BYTES = 10 * 1024 * 1024
+
+  const pickDocument = useCallback(async () => {
+    try {
+      const result = await DocumentPicker.getDocumentAsync({
+        multiple: true,
+        copyToCacheDirectory: true,
+      })
+      if (result.canceled) return
+      const items: Attachment[] = []
+      for (const asset of result.assets) {
+        if (asset.size != null && asset.size > MAX_FILE_BYTES) {
+          Alert.alert(t("session.alerts.fileTooLargeTitle"), t("session.alerts.fileTooLargeMessage"))
+          continue
+        }
+        try {
+          const base64 = await FileSystem.readAsStringAsync(asset.uri, {
+            encoding: "base64",
+          })
+          items.push({
+            uri: asset.uri,
+            mime: asset.mimeType || "application/octet-stream",
+            filename: asset.name,
+            base64,
+          })
+        } catch (err) {
+          console.error("Failed to read file:", err)
+          Alert.alert(t("session.alerts.imageFailedTitle"), t("session.alerts.imageFailedMessage"))
+        }
+      }
+      if (items.length) setAttachments((prev) => [...prev, ...items])
+    } catch (err) {
+      console.error("Document picker failed:", err)
+    }
+  }, [t])
+
+  // Plus button: one menu for every attachment source.
+  const openAttachMenu = useCallback(() => {
+    Alert.alert(t("session.attach.menuTitle"), undefined, [
+      { text: t("session.attach.photos"), onPress: () => void pickFromLibrary() },
+      { text: t("session.attach.camera"), onPress: () => void pickFromCamera() },
+      { text: t("session.attach.files"), onPress: () => void pickDocument() },
+      { text: t("common.cancel"), style: "cancel" },
+    ])
+  }, [t, pickFromLibrary, pickFromCamera, pickDocument])
 
   const pasteFromClipboard = useCallback(async () => {
     // Try image first
@@ -767,6 +902,10 @@ export default function SessionScreen() {
             flatListRef.current?.scrollToEnd({ animated: true })
           }}
           onClose={() => setShowInfo(false)}
+          onSummarize={() => void handleSummarize()}
+          summarizing={summarizing}
+          onFork={() => void handleFork()}
+          forking={forking}
         />
 
         {/* SSE reconnect/connected banner */}
@@ -940,7 +1079,7 @@ export default function SessionScreen() {
         >
           <View style={s.inputRow}>
             {/* Attach button */}
-            <TouchableOpacity style={s.attachBtn} onPress={pickFromLibrary} onLongPress={pickFromCamera}>
+            <TouchableOpacity style={s.attachBtn} onPress={openAttachMenu} onLongPress={pickFromCamera}>
               <Ionicons name="add-circle-outline" size={26} color={isDark ? "#888888" : "#666666"} />
             </TouchableOpacity>
 
