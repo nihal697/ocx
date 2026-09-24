@@ -101,8 +101,8 @@ android {
         applicationId 'com.ocx.app'
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 51
-        versionName "0.4.24"
+        versionCode 52
+        versionName "0.4.25"
         // Ship only the locales the app supports (en + zh-Hans) — drops
         // unused framework translations from every bundled library.
         resConfigs "en", "zh"

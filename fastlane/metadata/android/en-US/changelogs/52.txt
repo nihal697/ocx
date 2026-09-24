@@ -1,0 +1,5 @@
+v0.4.25 — Final release: project archived
+
+• Connection hardening from server-protocol work.
+• OCX is discontinued — development moves to OpenChamber (see README).
+• This is the last release; the app keeps working but won't be updated.

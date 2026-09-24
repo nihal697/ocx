@@ -1,3 +1,3 @@
-v0.4.24 — Fix file attachments, auto-naming
+v0.4.25 — Final release
 
-File attachments work again, and auto-naming now handles the server's default "New session" titles.
+OCX is discontinued in favor of OpenChamber. Last build, keeps working as-is.
