@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react"
 import { Stack, router } from "expo-router"
 import { StatusBar } from "expo-status-bar"
-import { useColorScheme, View, ActivityIndicator, AppState } from "react-native"
+import { useColorScheme, View, ActivityIndicator, AppState, TextInput } from "react-native"
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { GestureHandlerRootView } from "react-native-gesture-handler"
 import { BottomSheetModalProvider } from "@gorhom/bottom-sheet"
@@ -88,7 +88,14 @@ function RootLayout() {
   // prompt / app switcher / control center produce) to avoid spurious re-locks.
   useEffect(() => {
     const sub = AppState.addEventListener("change", (next) => {
-      if (next === "background" && useAuth.getState().settings.requireBiometric) {
+      if (next !== "background") return
+      // Drop focus from whatever input holds it. Android restores the
+      // keyboard on return for a still-focused field — even if the user had
+      // dismissed it — so an app switch with a focused composer reopens the
+      // keyboard uninvited. Blurring here makes return-to-app keyboard-free;
+      // tapping any field refocuses normally.
+      TextInput.State.currentlyFocusedInput()?.blur()
+      if (useAuth.getState().settings.requireBiometric) {
         useAuth.getState().lock()
       }
     })

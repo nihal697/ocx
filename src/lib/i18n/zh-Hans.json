@@ -222,6 +222,14 @@
         "helpRunningPrefix": "请确保 OpenCode 正在运行：",
         "advancedLink": "高级选项（隧道、云端、身份验证）"
       },
+      "qr": {
+        "scanButton": "扫描二维码",
+        "hint": "将相机对准连接二维码",
+        "permissionTitle": "需要相机权限",
+        "permissionMessage": "扫描二维码需要相机权限。",
+        "invalidTitle": "无法识别",
+        "invalidMessage": "该二维码不像是服务器连接信息，应为 URL 或 host:port，可为 JSON 格式。"
+      },
       "advanced": {
         "backToQuick": "简易模式",
         "urlHintPrefix": "本地/Tailscale 示例：",

@@ -68,6 +68,14 @@ Leave that terminal running. Notes:
 No server handy? Tap **Try a Demo** on the Sessions screen — a scripted
 30-second walkthrough with no setup required.
 
+**Tip — QR codes:** the Add Connection screen can scan a QR code instead of
+typing. Point it at any of these:
+- `192.168.1.100:4096` (fills IP + port)
+- `http://192.168.1.100:4096?password=yourpassword` (fills everything)
+- `{"host": "192.168.1.100:4096", "password": "yourpassword"}`
+Generate one with any QR tool (e.g. `qrencode -o wifi.png "http://..."`)
+and print it or show it on the computer screen.
+
 ## Step 4 — Start coding
 
 1. Tap **New Session**

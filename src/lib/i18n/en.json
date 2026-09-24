@@ -222,6 +222,14 @@
         "helpRunningPrefix": "Make sure OpenCode is running:",
         "advancedLink": "Advanced options (tunnels, cloud, auth)"
       },
+      "qr": {
+        "scanButton": "Scan QR code",
+        "hint": "Point the camera at a connection QR code",
+        "permissionTitle": "Camera needed",
+        "permissionMessage": "Camera access is required to scan QR codes.",
+        "invalidTitle": "Unrecognized code",
+        "invalidMessage": "That QR code doesn't look like a server connection. Expected a URL or host:port, optionally as JSON."
+      },
       "advanced": {
         "backToQuick": "Simple mode",
         "urlHintPrefix": "Local/Tailscale examples: ",

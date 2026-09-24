@@ -2,7 +2,7 @@
   "expo": {
     "name": "OCX",
     "slug": "ocx-mobile",
-    "version": "0.4.22",
+    "version": "0.4.23",
     "orientation": "portrait",
     "scheme": "ocx",
     "userInterfaceStyle": "automatic",
@@ -35,7 +35,7 @@
     },
     "android": {
       "package": "com.ocx.app",
-      "versionCode": 49,
+      "versionCode": 50,
       "usesCleartextTraffic": true,
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
@@ -50,6 +50,12 @@
       "expo-router",
       "expo-secure-store",
       "expo-local-authentication",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "OCX uses the camera to scan QR codes when adding a server connection."
+        }
+      ],
       [
         "expo-notifications",
         {

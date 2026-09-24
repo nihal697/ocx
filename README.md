@@ -56,7 +56,7 @@ OCX is a React Native / Expo app that brings the power of the [opencode](https:/
 
 ## Get OCX
 
-Package: `com.ocx.app` · Android only · current version v0.4.22
+Package: `com.ocx.app` · Android only · current version v0.4.23
 
 | Channel | Status | How |
 |---|---|---|
@@ -129,7 +129,7 @@ OCX is a thin client. It speaks the opencode HTTP + SSE API: listing sessions, s
 
 ## Project Status
 
-**Current version: v0.4.22**
+**Current version: v0.4.23**
 
 | Feature | Status |
 |---|---|

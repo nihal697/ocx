@@ -1,3 +1,3 @@
-v0.4.22 — Terminal, background tasks, take over
+v0.4.23 — QR setup, password peek, keyboard fix
 
-Real terminal shells on your server from the Files tab. Background running tasks from session info. Take over sessions via long-press.
+Scan a QR code to fill connection details, peek at passwords with the eye toggle, and no more keyboard popping up when returning to the app.

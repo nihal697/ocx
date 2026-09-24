@@ -1,0 +1,5 @@
+v0.4.23 — QR setup, password peek, keyboard fix
+
+• Add Connection has a Scan QR code button — point at a URL, host:port, or JSON code.
+• Password fields have an eye toggle in quick and advanced mode.
+• Fixed: returning to OCX no longer pops the keyboard back up.

@@ -11,9 +11,11 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
+  Modal,
 } from "react-native"
 import { router } from "expo-router"
 import { Ionicons } from "@expo/vector-icons"
+import { CameraView, useCameraPermissions } from "expo-camera"
 import { useTranslation } from "react-i18next"
 import { useConnections } from "../../src/stores/connections"
 import type { ConnectionType } from "../../src/lib/types"
@@ -23,6 +25,53 @@ import { parseUrl } from "../../src/lib/diagnostics-classify"
 import { buildAuth } from "../../src/lib/auth"
 import { AnalyticsEvent, track } from "../../src/lib/analytics"
 import { useKeyboardHeight } from "../../src/lib/use-keyboard-height"
+import { parseConnectionQr } from "../../src/lib/connection-qr"
+
+// Password field with a visibility toggle. Used in both quick and advanced
+// modes so neither ever locks the user out of verifying what they typed.
+function PasswordInput({
+  value,
+  onChangeText,
+  placeholder,
+  placeholderTextColor,
+  isDark,
+  testID,
+}: {
+  value: string
+  onChangeText: (v: string) => void
+  placeholder?: string
+  placeholderTextColor?: string
+  isDark: boolean
+  testID?: string
+}) {
+  const [visible, setVisible] = useState(false)
+  return (
+    <View style={[styles.input, isDark && styles.inputDark, styles.passwordRow]}>
+      <TextInput
+        style={[styles.passwordInput, isDark && styles.inputDark]}
+        placeholder={placeholder}
+        placeholderTextColor={placeholderTextColor}
+        value={value}
+        onChangeText={onChangeText}
+        secureTextEntry={!visible}
+        autoCapitalize="none"
+        autoCorrect={false}
+        testID={testID}
+      />
+      <TouchableOpacity
+        onPress={() => setVisible((v) => !v)}
+        hitSlop={8}
+        testID={testID ? `${testID}-toggle` : undefined}
+      >
+        <Ionicons
+          name={visible ? "eye-off-outline" : "eye-outline"}
+          size={20}
+          color={isDark ? "#888888" : "#666666"}
+        />
+      </TouchableOpacity>
+    </View>
+  )
+}
 
 export default function AddConnectionScreen() {
   const colorScheme = useColorScheme()
@@ -47,6 +96,44 @@ export default function AddConnectionScreen() {
   const [username, setUsername] = useState("")
   const [password, setPassword] = useState("")
   const [isConnecting, setIsConnecting] = useState(false)
+  const [scanning, setScanning] = useState(false)
+  const [scanned, setScanned] = useState(false)
+  const [cameraPermission, requestCameraPermission] = useCameraPermissions()
+
+  const openScanner = async () => {
+    const perm = cameraPermission?.granted ? cameraPermission : await requestCameraPermission()
+    if (!perm.granted) {
+      Alert.alert(t("connection.add.qr.permissionTitle"), t("connection.add.qr.permissionMessage"))
+      return
+    }
+    setScanned(false)
+    setScanning(true)
+  }
+
+  // Fill the form from a scanned code. Full URLs (with path, query, or
+  // credentials) go to advanced mode; plain host[:port] stays in quick mode.
+  const applyScannedCode = (data: string) => {
+    if (scanned) return
+    setScanned(true)
+    setScanning(false)
+    const parsed = parseConnectionQr(data)
+    if (!parsed) {
+      Alert.alert(t("connection.add.qr.invalidTitle"), t("connection.add.qr.invalidMessage"))
+      return
+    }
+    if (parsed.url) {
+      setUrl(parsed.url)
+      if (parsed.username) setUsername(parsed.username)
+      if (parsed.password) setPassword(parsed.password)
+      if (parsed.directory) setDirectory(parsed.directory)
+      setMode("advanced")
+      return
+    }
+    if (parsed.ip) setIp(parsed.ip)
+    if (parsed.port) setPort(parsed.port)
+    if (parsed.password) setPassword(parsed.password)
+    setMode("quick")
+  }
 
   const buildUrl = () => {
     if (mode === "advanced") return url.trim()
@@ -236,7 +323,36 @@ export default function AddConnectionScreen() {
           <Ionicons name="wifi" size={48} color={isDark ? "#ffffff" : "#0a0a0a"} />
           <Text style={[styles.quickTitle, isDark && styles.textDark]}>{t("connection.add.quick.title")}</Text>
           <Text style={[styles.quickSubtitle, isDark && styles.hintDark]}>{t("connection.add.quick.subtitle")}</Text>
+          <TouchableOpacity
+            style={[styles.qrButton, isDark && styles.qrButtonDark]}
+            onPress={() => void openScanner()}
+            testID="connect-scan-qr"
+          >
+            <Ionicons name="qr-code-outline" size={18} color={isDark ? "#ffffff" : "#0a0a0a"} />
+            <Text style={[styles.qrButtonText, isDark && styles.textDark]}>{t("connection.add.qr.scanButton")}</Text>
+          </TouchableOpacity>
         </View>
+
+        <Modal visible={scanning} animationType="slide" transparent={false}>
+          <View style={styles.scannerContainer}>
+            <CameraView
+              style={styles.scanner}
+              facing="back"
+              barcodeScannerSettings={{ barcodeTypes: ["qr"] }}
+              onBarcodeScanned={scanned ? undefined : ({ data }) => applyScannedCode(data)}
+            />
+            <View style={styles.scannerFooter}>
+              <Text style={styles.scannerHint}>{t("connection.add.qr.hint")}</Text>
+              <TouchableOpacity
+                style={styles.scannerCancel}
+                onPress={() => setScanning(false)}
+                testID="qr-cancel"
+              >
+                <Text style={styles.scannerCancelText}>{t("common.cancel")}</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
 
         {/* IP Address */}
         <Text style={[styles.label, isDark && styles.labelDark]}>{t("connection.add.quick.ipAddressLabel")}</Text>
@@ -276,13 +392,12 @@ export default function AddConnectionScreen() {
 
         {/* Password if needed */}
         <Text style={[styles.label, isDark && styles.labelDark]}>{t("connection.add.quick.passwordIfSetLabel")}</Text>
-        <TextInput
-          style={[styles.input, isDark && styles.inputDark]}
-          placeholder={t("connection.add.quick.passwordPlaceholder")}
-          placeholderTextColor={isDark ? "#666666" : "#999999"}
+        <PasswordInput
           value={password}
           onChangeText={setPassword}
-          secureTextEntry
+          placeholder={t("connection.add.quick.passwordPlaceholder")}
+          placeholderTextColor={isDark ? "#666666" : "#999999"}
+          isDark={isDark}
           testID="connect-password-input"
         />
         <Text style={[styles.usernameHint, isDark && styles.hintDark]}>
@@ -478,13 +593,12 @@ export default function AddConnectionScreen() {
       />
 
       <Text style={[styles.label, isDark && styles.labelDark]}>{t("connection.shared.password")}</Text>
-      <TextInput
-        style={[styles.input, isDark && styles.inputDark]}
-        placeholder="password"
-        placeholderTextColor={isDark ? "#666666" : "#999999"}
+      <PasswordInput
         value={password}
         onChangeText={setPassword}
-        secureTextEntry
+        placeholder="password"
+        placeholderTextColor={isDark ? "#666666" : "#999999"}
+        isDark={isDark}
       />
 
       {/* Save */}
@@ -699,6 +813,36 @@ const styles = StyleSheet.create({
     backgroundColor: "#1a1a1a",
     color: "#ffffff",
   },
+  passwordRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 4,
+  },
+  passwordInput: {
+    flex: 1,
+    fontSize: 16,
+    color: "#0a0a0a",
+    paddingVertical: 8,
+  },
+  qrButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginTop: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: "#d4d4d4",
+  },
+  qrButtonDark: { borderColor: "#404040" },
+  qrButtonText: { fontSize: 15, fontWeight: "600" },
+  scannerContainer: { flex: 1, backgroundColor: "#000000" },
+  scanner: { flex: 1 },
+  scannerFooter: { padding: 24, alignItems: "center", gap: 12, backgroundColor: "#000000" },
+  scannerHint: { color: "#ffffff", fontSize: 14, textAlign: "center" },
+  scannerCancel: { paddingHorizontal: 24, paddingVertical: 12, borderRadius: 8, backgroundColor: "#1a1a1a" },
+  scannerCancelText: { color: "#ffffff", fontSize: 15, fontWeight: "600" },
   sectionTitle: {
     fontSize: 18,
     fontWeight: "600",
