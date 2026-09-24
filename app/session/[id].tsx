@@ -278,8 +278,12 @@ export default function SessionScreen() {
     useCallback(() => {
       if (!id) return
       selectSession(id, directory).then(() => {
-        // Load catalog for this session's directory (or global if no directory)
-        loadCatalog(currentSession?.directory)
+        // Load catalog for this session's directory (or global if no directory).
+        // Use the route param, not currentSession: the .then callback closes
+        // over a render-time snapshot that may predate selectSession's commit
+        // (especially the very first render, when currentSession is null) —
+        // passing it would load the wrong/global catalog.
+        loadCatalog(directory)
         // Re-fetch pending permissions/questions from the server to recover from
         // missed SSE events or failed optimistic removals
         const connState = useConnections.getState()
@@ -289,21 +293,44 @@ export default function SessionScreen() {
     }, [id, directory]),
   )
 
-  // Sync model chip from latest assistant message
-  useEffect(() => {
-    if (!messages || messages.length === 0) return
-    for (let i = messages.length - 1; i >= 0; i--) {
-      const msg = messages[i]
-      if (msg.role === "assistant" && msg.providerID && msg.modelID) {
-        setModel({ providerID: msg.providerID, modelID: msg.modelID })
-        return
-      }
-      if (msg.role === "user" && msg.model) {
-        setModel(msg.model)
-        return
+  // Sync model chip from latest assistant message. Derive the value with
+  // useMemo keyed on the messages ARRAY identity: message.updated replaces the
+  // message object in place (same array length), which [.., messages?.length]
+  // deps would miss — the chip would keep showing the previous run's model
+  // until the array grows again. The memo returns a STABLE reference while the
+  // model value is unchanged, so streaming chunks that carry the same model
+  // don't re-trigger setModel below on every update.
+  const lastModelValue = useRef<ModelSelection | null>(null)
+  const latestModel = useMemo(() => {
+    let next: ModelSelection | null = null
+    if (messages && messages.length > 0) {
+      for (let i = messages.length - 1; i >= 0; i--) {
+        const msg = messages[i]
+        if (msg.role === "assistant" && msg.providerID && msg.modelID) {
+          next = { providerID: msg.providerID, modelID: msg.modelID }
+          break
+        }
+        if (msg.role === "user" && msg.model) {
+          next = msg.model
+          break
+        }
       }
     }
-  }, [currentSession?.id, messages?.length])
+    if (
+      next &&
+      lastModelValue.current &&
+      next.providerID === lastModelValue.current.providerID &&
+      next.modelID === lastModelValue.current.modelID
+    ) {
+      return lastModelValue.current
+    }
+    lastModelValue.current = next
+    return next
+  }, [messages])
+
+  useEffect(() => {
+    if (latestModel) setModel(latestModel)
+  }, [latestModel])
 
   // Slash command handler
   const handleSlashSelect = useCallback(
@@ -430,26 +457,34 @@ export default function SessionScreen() {
 
     const text = input.trim()
     const files = [...attachments]
-    setInput("")
-    setAttachments([])
 
-    // Server slash commands (no attachments for commands)
+    // Server slash commands (no attachments for commands). Runs BEFORE the
+    // input is cleared: a failed command must leave the typed text intact so
+    // the user can fix it and retry instead of silently losing it.
     if (text.startsWith("/") && files.length === 0) {
       const [cmdName, ...args] = text.split(" ")
       const name = cmdName.slice(1)
       const match = serverCommands.find((c) => c.name === name)
       if (match && sessionClient && currentSession) {
-        sessionClient.session
-          .command(currentSession.id, {
+        try {
+          await sessionClient.session.command(currentSession.id, {
             command: name,
             arguments: args.join(" "),
             agent,
             model: model ? `${model.providerID}/${model.modelID}` : undefined,
           })
-          .catch((err) => console.error("Command failed:", err))
+        } catch (err) {
+          console.error("Command failed:", err)
+          Alert.alert(t("session.alerts.commandFailedTitle"), t("session.alerts.commandFailedMessage"))
+          return
+        }
+        setInput("")
         return
       }
     }
+
+    setInput("")
+    setAttachments([])
 
     // Messages are queued server-side when the session is busy.
     // No need to abort - just send and it will be processed after current response.

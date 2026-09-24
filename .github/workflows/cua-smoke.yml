@@ -35,19 +35,23 @@ on:
         description: "Natural-language test query (enables --query mode, overrides scenario)"
         required: false
         default: ""
+  # NOTE: no paths: filter, matching ios-ci.yml — a path-filtered workflow
+  # never runs on PRs that touch nothing it filters, which permanently BLOCKS
+  # a PR if the workflow is ever made a required check (see #143). The
+  # AZURE_OPENAI_API_KEY guard on the job below covers the "credentials absent"
+  # case instead: the job simply skips rather than failing red on every push.
   push:
     branches: [main]
     tags: ["v*"]
-    paths:
-      - "scripts/android-cua-smoke.py"
-      - "src/**"
-      - "app/**"
-      - ".github/workflows/cua-smoke.yml"
 
 jobs:
   cua-test:
     runs-on: ubuntu-latest
     timeout-minutes: 60
+    # Needs a live opencode server driving a real Azure-backed LLM. Forks
+    # without the credentials get a clean SKIP instead of a failing workflow
+    # on every push to main (this now runs on all pushes — no paths filter).
+    if: ${{ secrets.AZURE_OPENAI_API_KEY != '' }}
     env:
       AZURE_OPENAI_API_KEY: ${{ secrets.AZURE_OPENAI_API_KEY }}
       AZURE_OPENAI_ENDPOINT: ${{ secrets.AZURE_OPENAI_ENDPOINT }}

@@ -50,7 +50,7 @@
 import { createSign } from "node:crypto";
 import { readFileSync } from "node:fs";
 
-const PACKAGE_NAME = process.env.PLAY_PACKAGE_NAME || "cc.agentlabs.opencode";
+const PACKAGE_NAME = process.env.PLAY_PACKAGE_NAME || "com.ocx.app";
 /**
  * CAREFUL: Play versionCodes are NOT the ones in android/app/build.gradle. The
  * publish workflow overwrites them with `github.run_number + 100`

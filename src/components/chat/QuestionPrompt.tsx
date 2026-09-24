@@ -49,30 +49,56 @@ export function QuestionPrompt({ request, isDark, onReply, onReject }: Props) {
     onReject()
   }
 
+  // Mirror of the latest committed answers, kept in the setAnswers calls
+  // below. Lets a rapid second tap on a single-select option see the first
+  // tap's selection even though the component hasn't re-rendered in between.
+  const answersRef = useRef<string[][]>(answers)
+  // Pending auto-submit for single-select one-question prompts: last-tap-wins.
+  // The reply is scheduled with a snapshot of the answers, replacing any
+  // prior timer — so if the user changes their mind within the delay window,
+  // the LAST tapped option is what gets submitted, not the first.
+  const replyTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const updateAnswers = (next: string[][]) => {
+    answersRef.current = next
+    setAnswers(next)
+  }
+
   const q = request.questions[current]
   if (!q) return null
 
   const toggleOption = (label: string) => {
-    setAnswers((prev) => {
-      const copy = [...prev]
-      const selected = copy[current] || []
-      if (q.multiple) {
-        copy[current] = selected.includes(label) ? selected.filter((a) => a !== label) : [...selected, label]
-      } else {
-        copy[current] = [label]
-        if (request.questions.length === 1) {
-          setTimeout(() => reply(copy), 100)
+    const prev = answersRef.current
+    const copy = [...prev]
+    const selected = copy[current] || []
+    if (q.multiple) {
+      copy[current] = selected.includes(label) ? selected.filter((a) => a !== label) : [...selected, label]
+    } else {
+      copy[current] = [label]
+      if (request.questions.length === 1) {
+        if (replyTimer.current) {
+          clearTimeout(replyTimer.current)
+          replyTimer.current = null
         }
+        const snapshot = copy
+        replyTimer.current = setTimeout(() => {
+          replyTimer.current = null
+          reply(snapshot)
+        }, 100)
       }
-      return copy
-    })
+    }
+    updateAnswers(copy)
   }
 
   const submitCustom = () => {
     if (!custom.trim()) return
-    const copy = [...answers]
+    // An explicit custom answer supersedes any pending auto-submit timer.
+    if (replyTimer.current) {
+      clearTimeout(replyTimer.current)
+      replyTimer.current = null
+    }
+    const copy = [...answersRef.current]
     copy[current] = [custom.trim()]
-    setAnswers(copy)
+    updateAnswers(copy)
     setCustom("")
     setShowCustom(false)
     if (request.questions.length === 1) {

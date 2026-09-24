@@ -104,11 +104,29 @@ jobs:
             echo "Signing: debug keystore (non-release build)"
           fi
 
-      - name: Build APK
+      # Every push/PR gets a debug build (universal APK — buildAbiSplits=false
+      # so it's installable and quick to compile); a release build only happens
+      # on version tags, matching the signing setup above. Building assembleRelease
+      # on every push cost ~10 extra minutes per run for artifacts nobody installed.
+      - name: Build debug APK
+        if: ${{ !startsWith(github.ref, 'refs/tags/v') }}
+        working-directory: android
+        run: ./gradlew assembleDebug -PbuildAbiSplits=false
+
+      - name: Upload debug APK artifact
+        if: ${{ !startsWith(github.ref, 'refs/tags/v') }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: app-debug
+          path: android/app/build/outputs/apk/debug/app-debug.apk
+
+      - name: Build release APKs
+        if: startsWith(github.ref, 'refs/tags/v')
         working-directory: android
         run: ./gradlew assembleRelease
 
-      - name: Upload APK artifacts (per architecture)
+      - name: Upload release APK artifacts (per architecture)
+        if: startsWith(github.ref, 'refs/tags/v')
         uses: actions/upload-artifact@v7
         with:
           name: app-release

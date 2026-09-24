@@ -33,23 +33,17 @@ name: Activation E2E (Maestro)
 # devices against a real server, so asserting on it here would be asserting
 # on the harness rather than the app.
 
+# NOTE: no paths-ignore and no paths: filter, matching ios-ci.yml. A
+# path-filtered workflow never runs on PRs that touch nothing it filters
+# (docs-only PRs, etc.); if it is ever added to branch protection as a
+# required check, those PRs stay permanently BLOCKED with a check that never
+# appears. This suite is fast and fully self-contained, so running it on every
+# PR is cheap insurance. See #143 (docs PR stuck) for why.
 on:
   push:
     branches: [main]
-    paths:
-      - "app/**"
-      - "src/**"
-      - "tests/fixtures/**"
-      - ".maestro/**"
-      - ".github/workflows/activation-e2e.yml"
   pull_request:
     branches: [main]
-    paths:
-      - "app/**"
-      - "src/**"
-      - "tests/fixtures/**"
-      - ".maestro/**"
-      - ".github/workflows/activation-e2e.yml"
   workflow_dispatch: {}
 
 jobs:

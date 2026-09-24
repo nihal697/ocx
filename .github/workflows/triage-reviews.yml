@@ -2,9 +2,6 @@ name: Play Store Review Triage
 
 on:
   workflow_dispatch:
-  schedule:
-    # 07:00 UTC daily (staggered after Daily Product Intelligence at 06:00 UTC)
-    - cron: "0 7 * * *"
 
 permissions:
   contents: read

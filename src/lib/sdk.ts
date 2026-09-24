@@ -387,9 +387,14 @@ export function createClient(config: ClientConfig) {
           body: JSON.stringify(params),
         }),
 
-      messages: (sessionID: string, params?: { limit?: number }) => {
+      messages: (sessionID: string, params?: { limit?: number; before?: string }) => {
         const query = new URLSearchParams()
         if (params?.limit) query.set("limit", String(params.limit))
+        // Backwards-pagination cursor (base64url of {id, time}), supported by
+        // the opencode server: returns the `limit` messages strictly older
+        // than the cursor. Without it the endpoint can only ever return the
+        // NEWEST N, so "load older" would have to fetch the whole session.
+        if (params?.before) query.set("before", params.before)
         const qs = query.toString()
         return request<MessageWithParts[]>(config, `/session/${sessionID}/message${qs ? `?${qs}` : ""}`)
       },

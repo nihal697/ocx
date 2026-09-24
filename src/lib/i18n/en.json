@@ -116,6 +116,8 @@
       "authRequiredMessage": "Biometric authentication is required to send. Please try again.",
       "sendFailedTitle": "Message not sent",
       "sendFailedMessage": "Could not send your message. Check your connection and try again.",
+      "commandFailedTitle": "Command failed",
+      "commandFailedMessage": "Could not run that command. Check your connection and try again.",
       "replyFailedTitle": "Reply Failed",
       "replyFailedMessage": "Could not send your response. Please try again.",
       "rejectFailedTitle": "Reject Failed",

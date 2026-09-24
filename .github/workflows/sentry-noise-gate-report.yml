@@ -11,8 +11,6 @@ name: Sentry noise-gate report
 #
 #   gh workflow run "Sentry noise-gate report" -f post=2026-08-21T00:00:00Z..now
 #   gh run watch <id> && gh run view <id>   # table is in the job summary
-#
-# The scheduled Monday run exists so the trend is recorded even if nobody asks.
 
 on:
   workflow_dispatch:
@@ -32,10 +30,6 @@ on:
         description: "Sentry project slug"
         required: false
         default: "opencode-mobile"
-  schedule:
-    # Mondays 15:00 UTC. Weekly, not daily: a window under ~24h ranks sources but
-    # cannot certify a monthly rate, and Play vitals land with a multi-day lag.
-    - cron: "0 15 * * 1"
 
 permissions:
   contents: read

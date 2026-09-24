@@ -604,7 +604,39 @@ export function createMockOpencodeServer(opts: MockServerOptions) {
       if (!session || session.directory !== requestDirectory(req)) {
         return json(res, 404, { error: `unknown session ${sid}` })
       }
-      return json(res, 200, messagesBySession.get(sid) || [])
+      // Mirror the real opencode /session/:id/message contract the app's SDK
+      // relies on: `?limit=N` returns the NEWEST N messages, and
+      // `?limit=N&before=<cursor>` returns N messages strictly older than the
+      // cursor (base64url of { id, time }) — newest-last order, same as the
+      // SQL: desc(time_created, id) then reverse.
+      const list = messagesBySession.get(sid) || []
+      let page = list
+      const limit = url.searchParams.get("limit")
+      const before = url.searchParams.get("before")
+      if (before) {
+        let cursor: { id?: string; time?: number }
+        try {
+          cursor = JSON.parse(Buffer.from(before, "base64url").toString("utf8"))
+        } catch {
+          return json(res, 400, { error: "invalid cursor" })
+        }
+        if (typeof cursor.id !== "string" || typeof cursor.time !== "number") {
+          return json(res, 400, { error: "invalid cursor" })
+        }
+        // Strictly older than the cursor in (time_created desc, id desc) order.
+        const cursorTime = cursor.time
+        const cursorId = cursor.id
+        page = list.filter(
+          (m) =>
+            m.info.time.created < cursorTime ||
+            (m.info.time.created === cursorTime && m.info.id < cursorId),
+        )
+      }
+      const sorted = [...page].sort(
+        (a, b) => b.info.time.created - a.info.time.created || (a.info.id < b.info.id ? 1 : -1),
+      )
+      const limited = limit && Number(limit) > 0 ? sorted.slice(0, Number(limit)) : sorted
+      return json(res, 200, [...limited].reverse())
     }
 
     const promptMatch = path.match(/^\/session\/([^/]+)\/prompt_async$/)

@@ -25,6 +25,18 @@ function pageSize(): number {
   return useSettings.getState().pageSize
 }
 
+// Encode the opencode server's backwards-pagination cursor. The endpoint reads
+// `?limit=N&before=<cursor>` as "N messages strictly older than the cursor";
+// a cursor is base64url(JSON { id, time }) where time is the message's
+// time_created. Message ids and timestamps are ASCII, so the Latin1-only
+// Hermes `btoa` is fine here (see src/lib/headers.ts).
+function encodeMessagesCursor(message: Message): string {
+  return btoa(JSON.stringify({ id: message.id, time: message.time.created }))
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/, "")
+}
+
 interface SessionsState {
   sessions: Session[]
   currentSession: Session | null
@@ -185,21 +197,35 @@ export const useSessions = create<SessionsState>((set, get) => ({
 
     try {
       set({ loadingMore: true })
-
-      // Fetch ALL messages for this session
-      const response = await client.session.messages(session.id)
-      const { messages: all, parts: allParts } = parseMessages(response)
-
-      // Merge: use all messages from full fetch, but keep any temp/optimistic messages
+      const size = pageSize()
+      // `?limit=` alone returns the NEWEST N messages, so a naive full fetch
+      // (previous behavior) pulled the entire session history — unbounded
+      // memory/latency on long sessions and inconsistent with the paginated
+      // initial load. Page backwards instead: anchor the cursor on the
+      // oldest message already on screen and fetch one page strictly older
+      // than it. Temp/optimistic messages aren't known to the server, so they
+      // can't anchor the cursor.
       const existing = get().messages
+      const settled = existing.filter((m) => !m.id.startsWith("temp-"))
+      const oldest = settled[0]
+      const response = await client.session.messages(session.id, {
+        limit: size,
+        before: oldest ? encodeMessagesCursor(oldest) : undefined,
+      })
+      const { messages: older, parts: olderParts } = parseMessages(response)
+
       const temp = existing.filter((m) => m.id.startsWith("temp-"))
-      const merged = [...all, ...temp]
+      const settledIds = new Set(settled.map((m) => m.id))
+      // Defensive dedup: a server that ignores `before` (or a cursor collision)
+      // would otherwise render the already-shown messages twice.
+      const deduped = older.filter((m) => !settledIds.has(m.id))
 
       set({
-        messages: merged,
-        parts: { ...allParts, ...Object.fromEntries(temp.map((m) => [m.id, get().parts[m.id] || []])) },
         loadingMore: false,
-        hasMore: false, // We loaded everything
+        // A full page back means there may be more before that page.
+        hasMore: response.length >= size,
+        messages: [...deduped, ...settled, ...temp],
+        parts: { ...olderParts, ...get().parts },
       })
     } catch (error) {
       console.error("Failed to load older messages:", error)

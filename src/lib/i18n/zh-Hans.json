@@ -116,6 +116,8 @@
       "authRequiredMessage": "发送消息需要生物识别验证。请重试。",
       "sendFailedTitle": "消息未发送",
       "sendFailedMessage": "无法发送您的消息。请检查连接后重试。",
+      "commandFailedTitle": "命令执行失败",
+      "commandFailedMessage": "无法执行该命令。请检查连接后重试。",
       "replyFailedTitle": "回复失败",
       "replyFailedMessage": "无法发送您的回复。请重试。",
       "rejectFailedTitle": "拒绝失败",

@@ -157,12 +157,26 @@ export default function EditConnectionScreen() {
         // rotates it in SecureStore.
         password || undefined,
       )
-      // If this was the active connection, the SSE loop may have stopped
-      // retrying after a prior 401 (see events.ts) — reconnect now with the
-      // freshly saved credentials instead of leaving the user stuck until
-      // they relaunch the app.
+      // Reconnect the SSE stream ONLY when it actually matters. The loop
+      // stops retrying by itself only on auth failure (authError, see
+      // events.ts); a newly saved URL/credentials is the recovery path for
+      // that. For a plain rename — or any save that leaves the network
+      // identity and credentials untouched — the live stream is still valid,
+      // and calling connect() unconditionally would abort it and force a
+      // disruptive reconnect for no benefit.
       if (useConnections.getState().activeConnection?.id === connection.id) {
-        useEvents.getState().connect()
+        const active = useConnections.getState().activeConnection
+        const credsChanged =
+          !!active &&
+          (active.url !== url.trim() ||
+            active.type !== type ||
+            (active.directory ?? undefined) !== (directory.trim() || undefined) ||
+            (active.username ?? undefined) !== (username.trim() || undefined) ||
+            !!password)
+        const eventsState = useEvents.getState()
+        if (credsChanged || eventsState.authError) {
+          useEvents.getState().connect()
+        }
       }
       setIsSaving(false)
       router.back()
