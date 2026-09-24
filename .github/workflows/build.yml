@@ -141,6 +141,27 @@ jobs:
     permissions:
       contents: write
     steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Compose release notes from version changelog
+        id: notes
+        run: |
+          VERSION_CODE=$(sed -n "s/.*versionCode[[:space:]]\+\([0-9]\+\).*/\1/p" android/app/build.gradle | tail -1)
+          echo "version_code=$VERSION_CODE" >> "$GITHUB_OUTPUT"
+          if [ -f "distribution/changelogs/${VERSION_CODE}.txt" ]; then
+            echo "body<<EOF" >> "$GITHUB_OUTPUT"
+            sed '1d' "distribution/changelogs/${VERSION_CODE}.txt" >> "$GITHUB_OUTPUT"
+            PREV_TAG=$(git describe --abbrev=0 --tags "$GITHUB_REF_NAME^" 2>/dev/null || true)
+            if [ -n "$PREV_TAG" ]; then
+              echo >> "$GITHUB_OUTPUT"
+              echo "**Full Changelog**: https://github.com/${GITHUB_REPOSITORY}/compare/${PREV_TAG}...${GITHUB_REF_NAME}" >> "$GITHUB_OUTPUT"
+            fi
+            echo "EOF" >> "$GITHUB_OUTPUT"
+            echo "compose_ok=true" >> "$GITHUB_OUTPUT"
+          fi
+
       - uses: actions/download-artifact@v8
         with:
           name: app-release
@@ -151,4 +172,5 @@ jobs:
           files: |
             app-arm64-v8a-release.apk
             app-armeabi-v7a-release.apk
+          body: ${{ steps.notes.outputs.compose_ok == 'true' && steps.notes.outputs.body || github.event.head_commit.message }}
           generate_release_notes: true

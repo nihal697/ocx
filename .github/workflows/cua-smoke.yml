@@ -35,23 +35,17 @@ on:
         description: "Natural-language test query (enables --query mode, overrides scenario)"
         required: false
         default: ""
-  # NOTE: no paths: filter, matching ios-ci.yml — a path-filtered workflow
-  # never runs on PRs that touch nothing it filters, which permanently BLOCKS
-  # a PR if the workflow is ever made a required check (see #143). The
-  # AZURE_OPENAI_API_KEY guard on the job below covers the "credentials absent"
-  # case instead: the job simply skips rather than failing red on every push.
-  push:
-    branches: [main]
-    tags: ["v*"]
+  # Manual-only: this harness needs a live opencode server driving a real
+  # Azure-backed LLM, which only exists on demand. Auto-triggering on push/tags
+  # produced a guaranteed failing check on every main/tag push (a job-level
+  # `if: ${{ secrets... }}` guard was tried to skip without creds — GitHub
+  # rejects the `secrets` context in job-level if, invalidating the whole
+  # workflow file with a 0-job "workflow file issue" failure).
 
 jobs:
   cua-test:
     runs-on: ubuntu-latest
     timeout-minutes: 60
-    # Needs a live opencode server driving a real Azure-backed LLM. Forks
-    # without the credentials get a clean SKIP instead of a failing workflow
-    # on every push to main (this now runs on all pushes — no paths filter).
-    if: ${{ secrets.AZURE_OPENAI_API_KEY != '' }}
     env:
       AZURE_OPENAI_API_KEY: ${{ secrets.AZURE_OPENAI_API_KEY }}
       AZURE_OPENAI_ENDPOINT: ${{ secrets.AZURE_OPENAI_ENDPOINT }}
